@@ -76,3 +76,16 @@
   color: inherit;
   font-size: 15px;
 }
+
+/* A quiet credit under the total line, aligned to its right edge. */
+.s4a-total-credit {
+  text-align: right;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: .02em;
+  opacity: .45;
+  padding: 5px 4px 3px;
+  border: 0 !important;
+}
+
+.s4a-total-credit-row td { border: 0 !important; background: transparent !important; }

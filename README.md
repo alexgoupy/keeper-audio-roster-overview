@@ -35,6 +35,7 @@ The row appears under the last artist, aligned with the Streams column:
 
 ```
 Roster Overview   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
+                                                                                    © Keeper Audio
 ```
 
 It appears on the roster's **Artists** tab only. The Releases tab lists releases, not

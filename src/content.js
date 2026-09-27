@@ -669,6 +669,29 @@
     return box;
   }
 
+  const CREDIT = '\u00a9 Keeper Audio';
+
+  // A second, flagged element under the total. Flagged so that parsing skips it
+  // and so that a re-render clears it along with the row it belongs to.
+  function buildCredit(line, cellSel) {
+    if (line.tagName === 'TR') {
+      const row = document.createElement('tr');
+      row.setAttribute(FLAG, 'credit');
+      row.className = 's4a-total-credit-row';
+      const cell = document.createElement('td');
+      cell.colSpan = Math.max(1, line.querySelectorAll(cellSel).length);
+      cell.className = 's4a-total-credit';
+      cell.textContent = CREDIT;
+      row.appendChild(cell);
+      return row;
+    }
+    const box = document.createElement('div');
+    box.setAttribute(FLAG, 'credit');
+    box.className = 's4a-total-credit';
+    box.textContent = CREDIT;
+    return box;
+  }
+
   // The roster has two tabs, Artists and Releases, and only the first one holds
   // the per-artist stream figures this line totals. The Releases tab has its own
   // URL, but it is reached by a client-side navigation, so the tab's own
@@ -691,17 +714,18 @@
   let lastSignature = null;
 
   let render = function render(force = false) {
-    const existing = document.querySelector(`[${FLAG}]`);
+    const existing = [...document.querySelectorAll(`[${FLAG}]`)];
+    const clear = () => existing.forEach((node) => node.remove());
 
     if (!isArtistsView()) {
-      if (existing) existing.remove();
+      clear();
       lastSignature = null;
       return;
     }
 
     const data = collectRoster();
     if (!data) {
-      if (existing) existing.remove();
+      clear();
       lastSignature = null;
       debug('no roster rows found yet');
       return;
@@ -711,14 +735,16 @@
     const change = aggregateChange(data.rows);
     const period = activePeriod();
     const signature = `${total}|${change}|${data.rows.length}|${period}|${data.columnIndex}`;
-    if (!force && signature === lastSignature && existing && existing.isConnected) return;
+    if (!force && signature === lastSignature && existing.length &&
+        existing.every((node) => node.isConnected)) return;
     lastSignature = signature;
 
     const line = data.sampleRow
       ? buildTotalRow(data, total, change)
       : buildFallback(data, total, change);
-    if (existing) existing.remove();
+    clear();
     data.lastRow.insertAdjacentElement('afterend', line);
+    line.insertAdjacentElement('afterend', buildCredit(line, data.cellSel));
 
     debug('total', total, 'change', change, 'period', period, 'metric', data.metric.key, 'skipped', data.skipped);
   };
