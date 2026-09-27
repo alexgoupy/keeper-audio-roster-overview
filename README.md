@@ -1,207 +1,146 @@
 # Keeper Audio - Roster Overview
 
-A Chrome extension that adds a **Total** row to the bottom of the Spotify for Artists
-roster table, summing the Streams column for the selected period and showing the
-roster's combined percentage change.
-
-Spotify shows per-artist figures but no roster-wide total. This fills that gap in
-place, in the page's own styling.
-
-> All figures in this repository — README and test fixtures alike — are invented
-> placeholders. No real roster data is included.
-
-## Who it's for
-
-Label owners, managers and self-releasing artists with several projects on one S4A
-account, who want a roster-level number without exporting to a spreadsheet. Installing
-requires loading an unpacked extension, so some developer comfort is assumed.
-
-## Install
-
-```
-chrome://extensions → Developer mode → Load unpacked → select this folder
-```
-
-Then open `artists.spotify.com/c/roster` and refresh. Any Chromium browser works
-(Chrome, Edge, Brave, Arc).
-
-Chrome loads unpacked extensions from a fixed path — moving the folder breaks the
-install. After editing the source, hit **↻** on the extension card, then reload the
-page.
-
-## Use
-
-The row appears under the last artist, aligned with the Streams column:
+Chrome extension (Manifest V3) that adds a summary line under the artist rows on the
+Spotify for Artists roster page, `artists.spotify.com/c/roster`. Spotify shows
+per-artist figures but no roster-wide total; this fills that gap in place.
 
 ```
 Roster Overview   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
-                                                                                    © Keeper Audio
+                                                                                      © Keeper Audio
 ```
 
-It appears on the roster's **Artists** tab only. The Releases tab lists releases, not
-per-artist streams, so there is nothing there to total. The extension keeps listening
-across a switch between the two tabs: the URL changes before the tab markup catches up,
-so a check run at navigation time can still read the previous tab as selected, and an
-observer disconnected at that moment would never hear the correction.
+All figures in this README and in the test fixtures are placeholders.
 
-It recalculates on its own when you switch periods (24 hours / 7 days / 28 days /
-12 months), sort, filter or navigate. Nothing to click.
+## Install
 
-Hovering the percentage explains what it measures.
+1. Open `chrome://extensions`
+2. Turn on **Developer mode**
+3. **Load unpacked**, and select this folder
+4. Open the roster page and refresh
 
-## How it works
+Works in any Chromium browser. Requests no permissions, makes no network calls, and runs
+only on `artists.spotify.com`.
 
-No permissions are requested, no network calls are made, and nothing leaves the page.
-The extension is a single content script scoped to `artists.spotify.com`.
+Chrome loads unpacked extensions from a fixed path, so moving this folder breaks the
+install. After editing the source, press **↻** on the extension card, then reload the
+page.
 
-**Row discovery.** Spotify's class names are obfuscated and change without notice, so
-none are referenced. Three strategies run in order: a real `<table>`; an ARIA grid
-(`[role="table"]` / `[role="row"]` / `[role="cell"]`); then repeated sibling elements
-each containing exactly one artist link, which covers plain `div` layouts.
+## What the line shows
 
-**Column identification.** The roster has several numeric columns, so the right one is
-found by matching header text (`stream`, `écoute`, `reproducciones`, `wiedergaben`,
-`ascolti`, then listeners, then followers). Failing that, the "Streams" label is
-located anywhere on the page and matched geometrically to the column beneath it.
-Failing that, the column with the largest median wins, since stream counts dwarf
-values like "3 more".
-
-**Number parsing.** The streams cell holds a count and a delta badge, and the two
-resist separation: `innerText` concatenates them with no delimiter, while the DOM
-splits the delta's digits and its `%` into separate text nodes. Cells are therefore
-read node by node for the count, and the rejoined text is used for the percentage.
-Thousands separators (`,` `.` space) and `K`/`M`/`B` suffixes are handled.
-
-**Percentage.** The combined change is derived, not averaged. Averaging per-artist
-percentages weights a large swing on a small artist equally with a small swing on a
-large one, which is simply wrong. Instead each artist's previous-period figure is
-recovered as `value / (1 + delta)`, those are summed, and the two totals compared.
-
-Two consequences. Spotify rounds each delta to a whole percent, so the recovered
-figures inherit that rounding — the result is accurate to roughly a tenth of a percent,
-not exact. And if any artist lacks a delta, the percentage is omitted entirely rather
-than computed from partial data.
-
-**Royalty estimate.** The Release column of the total row carries an estimate of gross
-royalties for the selected period: total streams x a per-stream rate, in euros. The
-rate is shown next to the figure rather than hidden, because it is the whole
-assumption.
-
-Spotify pays no per-stream rate at all. It pools subscription and ad revenue per
-market and divides each artist's share of streams into it, so the effective rate moves
-with listener country, paid-versus-free mix, and the month's totals.
-
-The default is the measured global blended rate — about $0.0036 per stream in early
-2026, converted to euros — and it is what reaches the rights holder before the
-distributor's cut. The spread around it is large and driven mostly by geography:
-
-| | approx. EUR/stream |
+| Field | Meaning |
 |---|---|
-| India, Brazil | 0.0007 – 0.0009 |
-| **Global blend (the default)** | **0.0032** |
-| France, US | 0.0033 – 0.0034 |
-| Germany, UK | 0.0037 – 0.0039 |
-| Norway, Iceland | 0.0069 – 0.0070 |
+| Streams | Sum of the Streams column for the selected period |
+| Change | Combined change against the previous period, weighted by volume |
+| Gross | Estimated royalties: streams × the per-stream rate |
+| Artist share | Estimated share of that gross reaching the artist |
 
-Markets with low paid penetration sit at the bottom because free-tier streams pay a
-fraction of Premium ones. Rates have been rising, not falling: subscription price
-increases feed the pool directly, and the 1,000-stream annual threshold introduced in
-2024 reallocated roughly $40M a year into it.
+It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
+12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab
+lists releases, not per-artist streams.
 
-Because geography dominates, you can do better than the blend in about five minutes:
-take the listener counts from **Audience → Top countries** in Spotify for Artists,
-multiply each country's share by that country's rate, and sum. The result is often
-counter-intuitive — a roster that looks European can land *below* the global blend if a
-sizeable minority of its audience sits in low-rate markets, since those shares pull
-harder than the Tier 1 ones push.
+## Settings
 
-Two caveats if you do this. Listener share is a proxy for stream share, and engagement
-per listener is not uniform across countries. And the top 15 is not the whole audience:
-the tail is usually weighted towards lower-rate markets, so the honest figure is a
-little under whatever the top 15 alone produce.
+Both inputs are assumptions, so both are adjustable. Run these in the console on the
+roster page; values persist per browser.
 
-The only rate that is truly yours is your own. Take a distributor statement, divide
-Spotify revenue by Spotify streams for the same period, and set that:
+| Key | Default | Meaning |
+|---|---|---|
+| `s4aRatePerStream` | `0.0032` | Euro per stream |
+| `s4aArtistShare` | `0.4` | Fraction reaching the artist; `40` also accepted |
 
 ```js
 localStorage.setItem('s4aRatePerStream', '0.0031')
+localStorage.setItem('s4aArtistShare', '0.5')
 ```
 
-The Release checklist column then carries the **artist share**: the same estimate
-multiplied by the cut that reaches the artist after distributor and label take theirs.
-That split is deal-specific, so the default is a placeholder — set your own:
+## How it works
 
-```js
-localStorage.setItem('s4aArtistShare', '0.5')   // fraction or percentage
-```
+**Finding the roster.** Spotify's class names are obfuscated and change without notice,
+so none are referenced. Three strategies run in order: a real `<table>`; an ARIA grid;
+then repeated sibling elements each holding exactly one artist link, which covers plain
+`div` layouts.
 
-Treat both as an order of magnitude, not an invoice. The gross figure is what reaches
-the rights holder before splits, it ignores Spotify's 1,000-stream annual threshold per
-track, and the share figure multiplies two assumptions, so its error band is wider
-still.
+**Picking the column.** The roster has several numeric columns, so the Streams column is
+identified by header text (`stream`, `écoute`, `reproducciones`, `wiedergaben`,
+`ascolti`, then listeners, then followers). Failing that, the header label is matched
+geometrically to the column beneath it; failing that, the column with the largest median
+wins.
 
-**Rendering.** The total row is a clone of a real row: other cells are emptied, but the
-value cell is edited in place, so the row inherits the page's column widths, padding,
-borders and theme (light and dark) without referencing any class. The badge is cloned
-from a row whose delta points the same direction, so its colour and arrow are already
-correct. The label is excluded from width calculation — it is wider than any artist
-name, and a column sizes to its widest cell, which would otherwise push the Streams
-column out of alignment. The row carries `data-s4a-total` and is skipped during
-parsing, so it never counts itself.
+**Reading the numbers.** The streams cell holds a count and a delta badge, and the two
+resist separation: `innerText` concatenates them with no delimiter, while the DOM splits
+the delta's digits from its `%` sign. Cells are therefore read text node by text node
+for the count, and the rejoined text is used for the percentage. Thousands separators
+(`,` `.` space) and `K`/`M`/`B` suffixes are handled.
 
-**Lifecycle.** The first render runs immediately — waiting on a debounce to show a row
-that is already computable is visible latency — and later ones are debounced behind a
-`MutationObserver`. There is no polling timer: client-side navigation is caught through
-the Navigation API, with a mutation-based fallback where that is unavailable, and the
-observer is disconnected whenever the Artists tab is not in view.
+**The percentage** is derived, not averaged. Averaging per-artist percentages weights a
+large swing on a small artist equally with a small swing on a large one. Instead each
+artist's previous-period figure is recovered as `value / (1 + delta)`, those are summed,
+and the two totals compared. Spotify rounds each delta to a whole percent, so the result
+is good to roughly a tenth of a percent. If any artist lacks a delta, the percentage is
+omitted rather than computed from partial data.
 
-The observer covers the whole body, which is deliberate. Scoping it to the roster
-container looks like a saving, but the live page produces roughly one mutation batch
-every three seconds at rest, and the tab controls sit outside that container — scoping
-it meant a tab switch went unnoticed. Attributes are filtered to `aria-selected`, the
-only one that matters.
+**The royalty figures** are estimates, not earnings. Spotify has no per-stream rate: it
+pools revenue per market and divides it by share of streams, so the effective rate moves
+with listener geography and paid-versus-free mix, ranging from a fraction of the default
+to several times it. The default is the measured global blended rate for early 2026,
+converted to euros. Gross is what reaches the rights holder before distributor and label
+splits; the artist share multiplies a second assumption on top of that. For an accurate
+figure, divide Spotify revenue by Spotify streams on a distributor statement covering
+the same period, and set that as the rate.
 
-Discovery — walking every table and grid, and in the worst case reading hundreds of
-bounding boxes — is cached against the container it found and only repeated if that
-container leaves the document. A repeat parse of the real roster measures about 0.1ms.
+**Rendering.** The line is a clone of a real roster row: other cells are emptied, but the
+value cell is edited in place, so it inherits the page's column widths, padding, borders
+and theme without referencing any class. The label is excluded from width calculation,
+since a column sizes itself to its widest cell and would otherwise push the Streams
+column out of alignment. The line and its credit are both marked `data-s4a-total`, so
+parsing skips them and a re-render clears both together.
+
+**Lifecycle.** The first render is immediate; later ones are debounced behind a
+`MutationObserver`. There is no polling timer — client-side navigation comes through the
+Navigation API, with a mutation-based fallback. The observer watches the whole body,
+with attributes filtered to `aria-selected`: the page produces about one mutation batch
+every three seconds at rest, and the tab controls sit outside the roster container, so
+scoping it narrower broke tab detection. Discovery is cached against the container it
+found; a repeat parse costs roughly 0.1ms.
 
 ## Layout
 
 ```
 manifest.json        MV3, no permissions
-src/content.js       parsing, math, rendering; per-stream rate at the top
-src/styles.css       the row's own styling only
+src/content.js       parsing, math, rendering
+src/styles.css       the line's own styling
 build-snippet.js     bundles the above into a console-pasteable block
 test/*.html          fixtures, each loading src/content.js directly
 ```
 
-## Development
+## Tests
 
 ```
 npx serve -l 4599 .
 ```
 
-Open the fixtures under `/test/`. They load the real content script, so what you test
-is what ships. Between them they cover `<table>`, ARIA grid and `div` layouts,
-English and French headers, abbreviated and European number formats, live period
-switching, and a roster with no delta badges. Each fixture documents its expected
-output in a comment.
+Open the fixtures under `/test/`. They load the real content script, so what you test is
+what ships. Between them they cover `<table>`, ARIA grid and `div` layouts, English and
+French headers, abbreviated and European number formats, live period switching, an
+Artists/Releases round trip, and a roster with no delta badges. Each fixture documents
+its expected output in a comment.
 
-`?s4aDebug=1` on any page logs the matched structure, headers, chosen column and
-parsed rows to the console, prefixed `[S4A Totals]`.
+## Troubleshooting
+
+Add `?s4aDebug=1` to the URL and open the console. The script logs which structure it
+matched, the headers it saw, the chosen column and every parsed row, prefixed
+`[S4A Totals]`.
 
 ## Without installing
 
-`node build-snippet.js` writes `dist/console-snippet.js` — the script and its styles as
+`node build-snippet.js` writes `dist/console-snippet.js`: the script and its styles as
 one self-contained block to paste into DevTools on the roster page. Chrome blocks the
-first console paste until you type `allow pasting`. Lasts until reload.
+first console paste until you type `allow pasting`. It lasts until the page reloads.
 
 ## Limitations
 
-- Reads only what the page renders; no API access, so no history and no data beyond
-  the current view.
-- Depends on the page's rendered structure. Spotify redesigns break DOM scrapers by
-  nature; the layered fallbacks are meant to absorb that, not to guarantee immunity.
-- Percentage precision is bounded by Spotify's rounding, as described above.
-- The royalty figures are estimates from assumed inputs, not reported earnings. The
-  artist share compounds two assumptions and should be treated loosely.
+- Reads only what the page renders. No API access, so no history and no data beyond the
+  current view.
+- Depends on the page's rendered structure. Redesigns break DOM scrapers by nature; the
+  layered fallbacks absorb that rather than prevent it.
+- Royalty figures rest on assumed inputs and are not reported earnings.
