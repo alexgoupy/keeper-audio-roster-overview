@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "S4A Roster Totals",
+  "version": "0.2.0",
+  "description": "Adds a Total line under the artists on the Spotify for Artists roster, summing streams for the selected period with the roster-wide percentage change.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://artists.spotify.com/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "css": [
+        "src/styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

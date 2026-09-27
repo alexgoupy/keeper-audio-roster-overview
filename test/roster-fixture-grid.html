@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture — roster as ARIA grid, abbreviated numbers</title>
+  <link rel="stylesheet" href="../src/styles.css">
+  <style>
+    body { margin: 0; background: #121212; color: #fff; font-family: system-ui, sans-serif; }
+    main { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+    [role="row"] { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; }
+    [role="columnheader"] { color: #a7a7a7; font-size: 12px; text-transform: uppercase; }
+    a { color: inherit; text-decoration: none; }
+    /* 1.28M + 412.9K + 98 204 + 1.004.771 + 55,3K = 1280000+412900+98204+1004771+55300 = 2,851,175 */
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Roster</h1>
+    <div role="table">
+      <div role="row"><span role="columnheader">Artist</span><span role="columnheader">Écoutes</span><span role="columnheader">Auditeurs</span></div>
+      <div role="row"><span role="cell"><a href="/c/artist/artist0000000000000001/overview">Artist Alpha</a></span><span role="cell">1.28M</span><span role="cell">84.2K</span></div>
+      <div role="row"><span role="cell"><a href="/c/artist/artist0000000000000002/overview">Artist Bravo</a></span><span role="cell">412.9K</span><span role="cell">31.9K</span></div>
+      <div role="row"><span role="cell"><a href="/c/artist/artist0000000000000003/overview">Artist Charlie</a></span><span role="cell">98 204</span><span role="cell">7 431</span></div>
+      <div role="row"><span role="cell"><a href="/c/artist/artist0000000000000004/overview">Artist Echo</a></span><span role="cell">1.004.771</span><span role="cell">66.010</span></div>
+      <div role="row"><span role="cell"><a href="/c/artist/artist0000000000000005/overview">Artist Delta</a></span><span role="cell">55,3K</span><span role="cell">4,2K</span></div>
+    </div>
+  </main>
+  <script src="../src/content.js"></script>
+</body>
+</html>

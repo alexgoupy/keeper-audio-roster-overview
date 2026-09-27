@@ -1,0 +1,56 @@
+/* The total line is a clone of a real roster row, so it already matches the
+   page's column widths, padding, borders and theme. Only the emphasis is ours,
+   and it is expressed in theme-neutral terms (currentColor, translucent grey)
+   so it reads correctly in both the light and dark Spotify for Artists themes. */
+
+.s4a-total-row {
+  font-weight: 700;
+  border-top: 2px solid rgba(128, 128, 128, 0.35) !important;
+}
+
+.s4a-total-row a {
+  cursor: default;
+  text-decoration: none;
+}
+
+/* The label is wider than an artist name, and a table or grid column sizes
+   itself to its widest cell — left alone it would stretch the first column and
+   shove the Streams column out of line with the rows above. Taking it out of
+   the width calculation (zero width, allowed to overflow) keeps every column
+   exactly where the real rows put it, so the total sits directly under the
+   numbers it sums. */
+.s4a-total-label {
+  display: inline-block;
+  width: 0;
+  overflow: visible;
+  white-space: nowrap;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.s4a-total-cell {
+  overflow: visible !important;
+}
+
+.s4a-total-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Inherits the donor badge's pill, colour and arrow; only the number changed. */
+.s4a-total-delta {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Only used when there is no row to clone. */
+.s4a-total-fallback {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 14px 4px;
+  border-top: 2px solid rgba(128, 128, 128, 0.35);
+  color: inherit;
+  font-size: 15px;
+}
