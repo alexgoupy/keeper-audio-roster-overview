@@ -237,7 +237,7 @@
 
     debug('parsed', { headers, column: chosen, headerText, rows: parsed, skipped });
     return {
-      rows: parsed, metric, skipped, headerText,
+      rows: parsed, metric, skipped, headerText, headers,
       cellSel, columnIndex: chosen,
       sampleRow: rows[rows.length - 1],
       lastRow: rows[rows.length - 1],
@@ -344,6 +344,115 @@
   /* ----------------------------------------------------------------- render */
 
   const formatNumber = (n) => new Intl.NumberFormat(undefined).format(n);
+
+  /* --------------------------------------------------------------- royalty */
+
+  // Spotify has no fixed per-stream rate: it pools revenue and divides it by
+  // share of streams, so the effective rate moves with listener market,
+  // subscription tier and the month's totals. Published averages sit around
+  // $0.003-$0.005 per stream (~$0.004), which at EUR/USD ~1.138 (Sept 2026) is
+  // about EUR 0.0035. That is the default here.
+  //
+  // It is an estimate of GROSS revenue to the rights holder, before distributor
+  // and label splits, and before Spotify's 1,000-stream-per-track annual
+  // threshold. Override it for your own catalogue from the console:
+  //   localStorage.setItem('s4aRatePerStream', '0.0031')
+  const DEFAULT_RATE_EUR = 0.0035;
+
+  // The cut reaching the artist after the distributor's and label's shares.
+  // Every deal differs, so this is a placeholder you should set to your own:
+  //   localStorage.setItem('s4aArtistShare', '0.5')   // or '50'
+  const DEFAULT_ARTIST_SHARE = 0.40;
+
+  function royaltyRate() {
+    try {
+      const stored = Number(localStorage.getItem('s4aRatePerStream'));
+      if (Number.isFinite(stored) && stored > 0) return stored;
+    } catch (error) { /* storage unavailable; fall through to the default */ }
+    return DEFAULT_RATE_EUR;
+  }
+
+  function artistShare() {
+    try {
+      const stored = Number(localStorage.getItem('s4aArtistShare'));
+      // Accepts either a fraction (0.4) or a percentage (40).
+      if (Number.isFinite(stored) && stored > 0) return stored > 1 ? stored / 100 : stored;
+    } catch (error) { /* storage unavailable; fall through to the default */ }
+    return DEFAULT_ARTIST_SHARE;
+  }
+
+  const formatEuros = (amount) => new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: amount < 100 ? 2 : 0,
+  }).format(amount);
+
+  const formatRate = (rate) => new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 4,
+    maximumFractionDigits: 4,
+  }).format(rate);
+
+  // The Release column, so the estimate sits clear of the figures it derives
+  // from. Falls back to the column just right of the streams one.
+  function releaseColumnIndex(headers, cellCount, valueIndex) {
+    const found = headers.findIndex((header) => header &&
+      /release|sortie|lanzamiento|ver[oö]ffentlich|uscita/i.test(header) &&
+      !/checklist|check-list|liste|aufgaben/i.test(header));
+    if (found !== -1 && found !== valueIndex) return found;
+    const next = valueIndex + 1;
+    return next < cellCount ? next : -1;
+  }
+
+  function estimateNode(amount, caption, title) {
+    const wrap = document.createElement('span');
+    wrap.className = 's4a-total-royalty';
+
+    const value = document.createElement('span');
+    value.className = 's4a-total-royalty-value';
+    value.textContent = `≈ ${formatEuros(amount)}`;
+
+    const note = document.createElement('span');
+    note.className = 's4a-total-rate';
+    note.textContent = ` ${caption}`;
+
+    wrap.append(value, note);
+    wrap.setAttribute('title', title);
+    return wrap;
+  }
+
+  function grossNode(total, count) {
+    const rate = royaltyRate();
+    return estimateNode(
+      total * rate,
+      `est. @ ${formatRate(rate)}/stream`,
+      `Estimated gross royalties for the selected period: ${formatNumber(total)} streams ` +
+      `across ${count} artists x ${formatRate(rate)}. Spotify pays no fixed rate — published ` +
+      `averages are roughly $0.003-$0.005 per stream, converted here at EUR/USD ~1.14. ` +
+      `Before distributor and label splits. Override with ` +
+      `localStorage.setItem('s4aRatePerStream', '0.0031').`);
+  }
+
+  function shareNode(total) {
+    const share = artistShare();
+    const percent = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(share * 100);
+    return estimateNode(
+      total * royaltyRate() * share,
+      `artist share (${percent}%)`,
+      `Estimated artist share: ${percent}% of the gross estimate beside it, i.e. what ` +
+      `reaches the artist after distributor and label cuts. This split is a placeholder — ` +
+      `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
+  }
+
+  // The Release checklist column, right of the gross estimate.
+  function checklistColumnIndex(headers, cellCount, taken) {
+    const found = headers.findIndex((header) => header &&
+      /checklist|check-list|aufgaben|lista de tareas/i.test(header));
+    if (found !== -1 && !taken.includes(found)) return found;
+    const last = cellCount - 1;
+    return taken.includes(last) ? -1 : last;
+  }
 
   const formatDelta = (d) => `${d < 0 ? '-' : ''}${Math.abs(d).toFixed(1).replace(/\.0$/, '')}%`;
 
@@ -454,6 +563,19 @@
     label.className = 's4a-total-label';
     label.textContent = `Total · ${data.rows.length} artists${period ? ` · ${period}` : ''}`;
 
+    const headers = data.headers || [];
+    const releaseIndex = releaseColumnIndex(headers, cells.length, data.columnIndex);
+    if (releaseIndex !== -1 && cells[releaseIndex] && cells[releaseIndex] !== valueCell) {
+      cells[releaseIndex].classList.add('s4a-total-cell');
+      cells[releaseIndex].appendChild(grossNode(total, data.rows.length));
+    }
+
+    const shareIndex = checklistColumnIndex(headers, cells.length, [data.columnIndex, releaseIndex]);
+    if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
+      cells[shareIndex].classList.add('s4a-total-cell');
+      cells[shareIndex].appendChild(shareNode(total));
+    }
+
     const labelIndex = data.columnIndex === 0 ? Math.min(1, cells.length - 1) : 0;
     const labelCell = cells[labelIndex];
     if (labelCell && labelCell !== valueCell) {
@@ -516,6 +638,7 @@
       `Total · ${data.rows.length} artists${period ? ` · ${period}` : ''}`;
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
+    box.append(grossNode(total, data.rows.length), shareNode(total));
     return box;
   }
 

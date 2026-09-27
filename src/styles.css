@@ -37,6 +37,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Like the label, kept out of the column's width calculation so the estimate
+   cannot disturb the alignment of the columns it sits between. */
+.s4a-total-royalty {
+  display: inline-block;
+  width: 0;
+  overflow: visible;
+  white-space: nowrap;
+  font-weight: 400;
+}
+
+.s4a-total-royalty-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The assumption is shown, not hidden: this is an estimate, not a statement. */
+.s4a-total-rate {
+  opacity: 0.6;
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
 /* Inherits the donor badge's pill, colour and arrow; only the number changed. */
 .s4a-total-delta {
   font-variant-numeric: tabular-nums;

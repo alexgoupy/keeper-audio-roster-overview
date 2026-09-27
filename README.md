@@ -34,7 +34,7 @@ page.
 The row appears under the last artist, aligned with the Streams column:
 
 ```
-Total · N artists · <period>      <combined streams>   ▼ <combined change>
+Total · N artists · <period>   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
 ```
 
 It recalculates on its own when you switch periods (24 hours / 7 days / 28 days /
@@ -75,6 +75,34 @@ figures inherit that rounding — the result is accurate to roughly a tenth of a
 not exact. And if any artist lacks a delta, the percentage is omitted entirely rather
 than computed from partial data.
 
+**Royalty estimate.** The Release column of the total row carries an estimate of gross
+royalties for the selected period: total streams x a per-stream rate, in euros. The
+rate is shown next to the figure rather than hidden, because it is the whole
+assumption.
+
+Spotify pays no fixed per-stream rate — it pools subscription and ad revenue and
+divides it by share of streams, so the effective rate moves with listener market,
+subscription tier and the month's totals. Published averages cluster around
+$0.003-$0.005 per stream; the default here is the midpoint converted to euros at
+roughly current EUR/USD. Override it for your own catalogue:
+
+```js
+localStorage.setItem('s4aRatePerStream', '0.0031')
+```
+
+The Release checklist column then carries the **artist share**: the same estimate
+multiplied by the cut that reaches the artist after distributor and label take theirs.
+That split is deal-specific, so the default is a placeholder — set your own:
+
+```js
+localStorage.setItem('s4aArtistShare', '0.5')   // fraction or percentage
+```
+
+Treat both as an order of magnitude, not an invoice. The gross figure is what reaches
+the rights holder before splits, it ignores Spotify's 1,000-stream annual threshold per
+track, and the share figure multiplies two assumptions, so its error band is wider
+still.
+
 **Rendering.** The total row is a clone of a real row: other cells are emptied, but the
 value cell is edited in place, so the row inherits the page's column widths, padding,
 borders and theme (light and dark) without referencing any class. The badge is cloned
@@ -91,7 +119,7 @@ re-renders and client-side navigation.
 
 ```
 manifest.json        MV3, no permissions
-src/content.js       parsing, math, rendering
+src/content.js       parsing, math, rendering; per-stream rate at the top
 src/styles.css       the row's own styling only
 build-snippet.js     bundles the above into a console-pasteable block
 test/*.html          fixtures, each loading src/content.js directly
@@ -125,3 +153,5 @@ first console paste until you type `allow pasting`. Lasts until reload.
 - Depends on the page's rendered structure. Spotify redesigns break DOM scrapers by
   nature; the layered fallbacks are meant to absorb that, not to guarantee immunity.
 - Percentage precision is bounded by Spotify's rounding, as described above.
+- The royalty figures are estimates from assumed inputs, not reported earnings. The
+  artist share compounds two assumptions and should be treated loosely.
