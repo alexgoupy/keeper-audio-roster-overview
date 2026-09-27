@@ -34,8 +34,11 @@ page.
 The row appears under the last artist, aligned with the Streams column:
 
 ```
-Total Streams & Revenue   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
+Total Streams   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
 ```
+
+It appears on the roster's **Artists** tab only. The Releases tab lists releases, not
+per-artist streams, so there is nothing there to total.
 
 It recalculates on its own when you switch periods (24 hours / 7 days / 28 days /
 12 months), sort, filter or navigate. Nothing to click.
@@ -142,8 +145,21 @@ name, and a column sizes to its widest cell, which would otherwise push the Stre
 column out of alignment. The row carries `data-s4a-total` and is skipped during
 parsing, so it never counts itself.
 
-**Lifecycle.** A debounced `MutationObserver` plus a URL watcher handle the SPA's
-re-renders and client-side navigation.
+**Lifecycle.** The first render runs immediately — waiting on a debounce to show a row
+that is already computable is visible latency — and later ones are debounced behind a
+`MutationObserver`. There is no polling timer: client-side navigation is caught through
+the Navigation API, with a mutation-based fallback where that is unavailable, and the
+observer is disconnected whenever the Artists tab is not in view.
+
+The observer covers the whole body, which is deliberate. Scoping it to the roster
+container looks like a saving, but the live page produces roughly one mutation batch
+every three seconds at rest, and the tab controls sit outside that container — scoping
+it meant a tab switch went unnoticed. Attributes are filtered to `aria-selected`, the
+only one that matters.
+
+Discovery — walking every table and grid, and in the worst case reading hundreds of
+bounding boxes — is cached against the container it found and only repeated if that
+container leaves the document. A repeat parse of the real roster measures about 0.1ms.
 
 ## Layout
 

@@ -295,23 +295,39 @@
     return analyzeRows(rows, ':scope > *', []);
   }
 
-  function collectRoster() {
+  // Discovery walks every table and grid on the page and can fall back to
+  // geometry, which reads hundreds of bounding boxes. The answer almost never
+  // changes, so it is kept and reused while the container it found is still in
+  // the document; only a real teardown forces the search again.
+  let cached = null;
+
+  function discover() {
     for (const table of document.querySelectorAll('table')) {
       const parsed = parseGrid(table, 'th', 'tbody tr, tr', 'td, th');
-      if (parsed) return { ...parsed, source: 'table' };
+      if (parsed) return { ...parsed, source: 'table', root: table, args: ['th', 'tbody tr, tr', 'td, th'] };
     }
     for (const grid of document.querySelectorAll('[role="table"], [role="grid"], [role="treegrid"], [role="list"], ul, ol')) {
-      const parsed = parseGrid(
-        grid,
+      const args = [
         '[role="columnheader"], th',
         '[role="row"], [role="listitem"], li',
-        '[role="gridcell"], [role="cell"], [role="rowheader"], td, th'
-      );
-      if (parsed) return { ...parsed, source: 'grid' };
+        '[role="gridcell"], [role="cell"], [role="rowheader"], td, th',
+      ];
+      const parsed = parseGrid(grid, args[0], args[1], args[2]);
+      if (parsed) return { ...parsed, source: 'grid', root: grid, args };
     }
     const repeated = parseRepeated();
-    if (repeated) return { ...repeated, source: 'repeated' };
+    if (repeated) return { ...repeated, source: 'repeated', root: null, args: null };
     return null;
+  }
+
+  function collectRoster() {
+    if (cached && cached.root && cached.root.isConnected) {
+      const again = parseGrid(cached.root, cached.args[0], cached.args[1], cached.args[2]);
+      if (again) return { ...again, source: cached.source, root: cached.root, args: cached.args };
+    }
+    cached = discover();
+    if (cached) debug('discovered roster via', cached.source);
+    return cached;
   }
 
   /* ------------------------------------------------------------ the period */
@@ -573,7 +589,7 @@
 
     const label = document.createElement('span');
     label.className = 's4a-total-label';
-    label.textContent = 'Total Streams & Revenue';
+    label.textContent = 'Total Streams';
 
     const headers = data.headers || [];
     const releaseIndex = releaseColumnIndex(headers, cells.length, data.columnIndex);
@@ -646,21 +662,38 @@
     box.setAttribute(FLAG, '1');
     box.className = 's4a-total-fallback';
     box.innerHTML = `<span class="s4a-total-label"></span><span class="s4a-total-value"></span>`;
-    box.querySelector('.s4a-total-label').textContent = 'Total Streams & Revenue';
+    box.querySelector('.s4a-total-label').textContent = 'Total Streams';
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
     box.append(grossNode(total, data.rows.length), shareNode(total));
     return box;
   }
 
-  const isRosterPage = () => /roster/i.test(location.pathname);
+  // The roster has two tabs, Artists and Releases, and only the first one holds
+  // the per-artist stream figures this line totals. The Releases tab has its own
+  // URL, but it is reached by a client-side navigation, so the tab's own
+  // aria-selected state is checked as well as the path.
+  const ARTISTS_TAB = /^(artists?|artistes?|k[üu]nstler|artistas|artisti)$/i;
+  const RELEASES_TAB = /^(releases?|sorties?|lanzamientos?|ver[oö]ffentlichungen|uscite)$/i;
+
+  function isArtistsView() {
+    const path = location.pathname;
+    if (!/roster/i.test(path)) return false;
+    if (/releases?\/?$/i.test(path)) return false;
+
+    const selected = [...document.querySelectorAll('[role="tab"][aria-selected="true"]')]
+      .map((tab) => (tab.textContent || '').trim())
+      .find((text) => ARTISTS_TAB.test(text) || RELEASES_TAB.test(text));
+
+    return !(selected && RELEASES_TAB.test(selected));
+  }
 
   let lastSignature = null;
 
-  function render(force = false) {
+  let render = function render(force = false) {
     const existing = document.querySelector(`[${FLAG}]`);
 
-    if (!isRosterPage()) {
+    if (!isArtistsView()) {
       if (existing) existing.remove();
       lastSignature = null;
       return;
@@ -688,33 +721,96 @@
     data.lastRow.insertAdjacentElement('afterend', line);
 
     debug('total', total, 'change', change, 'period', period, 'metric', data.metric.key, 'skipped', data.skipped);
-  }
+  };
 
   /* ------------------------------------------------------------- lifecycle */
 
+  // Renders are cheap (a parse costs a fraction of a millisecond) but they are
+  // triggered by the page's own DOM churn, so they are debounced. The first one
+  // runs immediately: waiting 300ms just to show a row that is already
+  // computable is latency the reader can see.
   let timer = null;
-  const schedule = () => {
+  let firstRun = true;
+  let writing = false;
+
+  function schedule() {
+    if (firstRun) {
+      firstRun = false;
+      render();
+      return;
+    }
     clearTimeout(timer);
-    timer = setTimeout(() => render(), 300);
+    timer = setTimeout(render, 300);
+  }
+
+  // A flag is cheaper than asking every mutation record whether it came from our
+  // own row: on a busy page that was a closest() call per record.
+  const observer = new MutationObserver(() => { if (!writing) schedule(); });
+
+  const guard = (fn) => function () {
+    writing = true;
+    try { return fn.apply(this, arguments); } finally {
+      // Let the observer drain our own records before listening again.
+      setTimeout(() => { writing = false; }, 0);
+    }
   };
+  render = guard(render);
 
-  const observer = new MutationObserver((mutations) => {
-    const ours = mutations.every((m) => {
-      const node = m.target.nodeType === 1 ? m.target : m.target.parentElement;
-      return node && node.closest && node.closest(`[${FLAG}]`);
+  let watching = false;
+
+  function watch() {
+    if (watching) return;
+    // Body-wide on purpose. Scoping this to the roster's own container looks
+    // like a saving, but measured on the live page the whole document produces
+    // about one mutation batch every three seconds at rest, and the Artists /
+    // Releases tabs sit outside that container: scoping it meant a tab switch
+    // that does not change the URL went unnoticed. aria-selected is the only
+    // attribute worth hearing about, so it is filtered to that one.
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['aria-selected'],
     });
-    if (!ours) schedule();
-  });
+    watching = true;
+  }
 
-  let lastUrl = location.href;
-  setInterval(() => {
-    if (location.href === lastUrl) return;
-    lastUrl = location.href;
+  function unwatch() {
+    if (!watching) return;
+    observer.disconnect();
+    watching = false;
+  }
+
+  function onLocation() {
     lastSignature = null;
+    cached = null;
+    unwatch();
+    if (!isArtistsView()) {
+      const existing = document.querySelector(`[${FLAG}]`);
+      if (existing) existing.remove();
+      return;
+    }
+    firstRun = true;
+    watch();
     schedule();
-  }, 600);
+  }
 
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-  schedule();
+  // The script matches every page on the host so that a client-side navigation
+  // into the roster is caught, but off the roster it does nothing beyond
+  // listening for that navigation.
+  if (window.navigation && typeof window.navigation.addEventListener === 'function') {
+    window.navigation.addEventListener('navigate', () => setTimeout(onLocation, 0));
+  } else {
+    let lastUrl = location.href;
+    const poll = new MutationObserver(() => {
+      if (location.href === lastUrl) return;
+      lastUrl = location.href;
+      onLocation();
+    });
+    poll.observe(document.body, { childList: true, subtree: true });
+  }
+
+  onLocation();
   debug('loaded on', location.href);
 })();

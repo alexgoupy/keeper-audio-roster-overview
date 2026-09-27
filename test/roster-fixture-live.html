@@ -19,12 +19,19 @@
     .av { width: 36px; height: 36px; border-radius: 50%; background: #d9d9de; flex: none; }
     .d4n { display: inline-block; margin-left: 10px; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; }
     .up { background: #e6f6ec; color: #1a7f3c; } .down { background: #fdeaea; color: #c02626; }
+    .tabs { display: flex; gap: 20px; font-weight: 700; }
+    .tabs [aria-selected="false"] { opacity: .55; }
     .m5 { border: 1px solid #d9d9de; border-radius: 999px; padding: 6px 12px; font-size: 13px; display: inline-block; }
     /* Expected: 28 days = 8,650,000 / -6.4% · 7 days = 2,255,000 / 10.7% */
   </style>
 </head>
 <body>
   <main>
+    <div role="tablist" class="tabs">
+      <div role="tab" aria-selected="true">Artists</div>
+      <div role="tab" aria-selected="false">Releases</div>
+    </div>
+
     <h1>Welcome back, here's your overview</h1>
 
     <div class="x7f2a">
