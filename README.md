@@ -101,6 +101,18 @@ fraction of Premium ones. Rates have been rising, not falling: subscription pric
 increases feed the pool directly, and the 1,000-stream annual threshold introduced in
 2024 reallocated roughly $40M a year into it.
 
+Because geography dominates, you can do better than the blend in about five minutes:
+take the listener counts from **Audience → Top countries** in Spotify for Artists,
+multiply each country's share by that country's rate, and sum. The result is often
+counter-intuitive — a roster that looks European can land *below* the global blend if a
+sizeable minority of its audience sits in low-rate markets, since those shares pull
+harder than the Tier 1 ones push.
+
+Two caveats if you do this. Listener share is a proxy for stream share, and engagement
+per listener is not uniform across countries. And the top 15 is not the whole audience:
+the tail is usually weighted towards lower-rate markets, so the honest figure is a
+little under whatever the top 15 alone produce.
+
 The only rate that is truly yours is your own. Take a distributor statement, divide
 Spotify revenue by Spotify streams for the same period, and set that:
 
