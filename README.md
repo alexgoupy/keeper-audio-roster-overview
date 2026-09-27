@@ -80,11 +80,29 @@ royalties for the selected period: total streams x a per-stream rate, in euros. 
 rate is shown next to the figure rather than hidden, because it is the whole
 assumption.
 
-Spotify pays no fixed per-stream rate — it pools subscription and ad revenue and
-divides it by share of streams, so the effective rate moves with listener market,
-subscription tier and the month's totals. Published averages cluster around
-$0.003-$0.005 per stream; the default here is the midpoint converted to euros at
-roughly current EUR/USD. Override it for your own catalogue:
+Spotify pays no per-stream rate at all. It pools subscription and ad revenue per
+market and divides each artist's share of streams into it, so the effective rate moves
+with listener country, paid-versus-free mix, and the month's totals.
+
+The default is the measured global blended rate — about $0.0036 per stream in early
+2026, converted to euros — and it is what reaches the rights holder before the
+distributor's cut. The spread around it is large and driven mostly by geography:
+
+| | approx. EUR/stream |
+|---|---|
+| India, Brazil | 0.0007 – 0.0009 |
+| **Global blend (the default)** | **0.0032** |
+| France, US | 0.0033 – 0.0034 |
+| Germany, UK | 0.0037 – 0.0039 |
+| Norway, Iceland | 0.0069 – 0.0070 |
+
+Markets with low paid penetration sit at the bottom because free-tier streams pay a
+fraction of Premium ones. Rates have been rising, not falling: subscription price
+increases feed the pool directly, and the 1,000-stream annual threshold introduced in
+2024 reallocated roughly $40M a year into it.
+
+The only rate that is truly yours is your own. Take a distributor statement, divide
+Spotify revenue by Spotify streams for the same period, and set that:
 
 ```js
 localStorage.setItem('s4aRatePerStream', '0.0031')
