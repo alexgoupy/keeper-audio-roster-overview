@@ -533,7 +533,7 @@
   // value cell keeps its internal structure too — only the number and the badge
   // inside it are rewritten — so the total lands on the same alignment as the
   // column above it instead of sitting off to one side.
-  function buildTotalRow(data, total, change, period) {
+  function buildTotalRow(data, total, change) {
     const row = pickDonor(data, change).cloneNode(true);
     row.setAttribute(FLAG, '1');
     row.classList.add('s4a-total-row');
@@ -573,7 +573,7 @@
 
     const label = document.createElement('span');
     label.className = 's4a-total-label';
-    label.textContent = `Total · ${data.rows.length} artists${period ? ` · ${period}` : ''}`;
+    label.textContent = 'Total Streams & Revenue';
 
     const headers = data.headers || [];
     const releaseIndex = releaseColumnIndex(headers, cells.length, data.columnIndex);
@@ -641,13 +641,12 @@
   }
 
   // Used when there is no row to clone.
-  function buildFallback(data, total, change, period) {
+  function buildFallback(data, total, change) {
     const box = document.createElement('div');
     box.setAttribute(FLAG, '1');
     box.className = 's4a-total-fallback';
     box.innerHTML = `<span class="s4a-total-label"></span><span class="s4a-total-value"></span>`;
-    box.querySelector('.s4a-total-label').textContent =
-      `Total · ${data.rows.length} artists${period ? ` · ${period}` : ''}`;
+    box.querySelector('.s4a-total-label').textContent = 'Total Streams & Revenue';
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
     box.append(grossNode(total, data.rows.length), shareNode(total));
@@ -683,8 +682,8 @@
     lastSignature = signature;
 
     const line = data.sampleRow
-      ? buildTotalRow(data, total, change, period)
-      : buildFallback(data, total, change, period);
+      ? buildTotalRow(data, total, change)
+      : buildFallback(data, total, change);
     if (existing) existing.remove();
     data.lastRow.insertAdjacentElement('afterend', line);
 

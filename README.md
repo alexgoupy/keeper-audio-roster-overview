@@ -34,7 +34,7 @@ page.
 The row appears under the last artist, aligned with the Streams column:
 
 ```
-Total · N artists · <period>   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
+Total Streams & Revenue   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
 ```
 
 It recalculates on its own when you switch periods (24 hours / 7 days / 28 days /
