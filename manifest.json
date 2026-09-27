@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "S4A Roster Totals",
-  "version": "0.2.0",
-  "description": "Adds a Total line under the artists on the Spotify for Artists roster, summing streams for the selected period with the roster-wide percentage change.",
+  "name": "Keeper Audio - Roster Overview",
+  "version": "0.4.0",
+  "description": "Adds a Roster Overview line under the artists on the Spotify for Artists roster, totalling streams for the selected period with the roster-wide change and a royalty estimate.",
   "content_scripts": [
     {
       "matches": [

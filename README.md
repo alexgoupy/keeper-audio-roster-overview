@@ -1,4 +1,4 @@
-# S4A Roster Totals
+# Keeper Audio - Roster Overview
 
 A Chrome extension that adds a **Total** row to the bottom of the Spotify for Artists
 roster table, summing the Streams column for the selected period and showing the
