@@ -589,7 +589,7 @@
 
     const label = document.createElement('span');
     label.className = 's4a-total-label';
-    label.textContent = 'Total Streams';
+    label.textContent = 'Roster Overview';
 
     const headers = data.headers || [];
     const releaseIndex = releaseColumnIndex(headers, cells.length, data.columnIndex);
@@ -662,7 +662,7 @@
     box.setAttribute(FLAG, '1');
     box.className = 's4a-total-fallback';
     box.innerHTML = `<span class="s4a-total-label"></span><span class="s4a-total-value"></span>`;
-    box.querySelector('.s4a-total-label').textContent = 'Total Streams';
+    box.querySelector('.s4a-total-label').textContent = 'Roster Overview';
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
     box.append(grossNode(total, data.rows.length), shareNode(total));
@@ -785,12 +785,20 @@
   function onLocation() {
     lastSignature = null;
     cached = null;
-    unwatch();
-    if (!isArtistsView()) {
+
+    if (!/roster/i.test(location.pathname)) {
+      unwatch();
       const existing = document.querySelector(`[${FLAG}]`);
       if (existing) existing.remove();
       return;
     }
+
+    // Both tabs live under the roster path, so stay subscribed across a switch
+    // between them rather than unsubscribing per tab. The URL changes before
+    // the tab markup catches up, so a check run now can still read the old tab
+    // as selected; an observer that had been disconnected would never hear the
+    // correction, and the line would stay missing until a reload. render()
+    // decides whether the line belongs; this only decides whether to listen.
     firstRun = true;
     watch();
     schedule();

@@ -34,11 +34,14 @@ page.
 The row appears under the last artist, aligned with the Streams column:
 
 ```
-Total Streams   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
+Roster Overview   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
 ```
 
 It appears on the roster's **Artists** tab only. The Releases tab lists releases, not
-per-artist streams, so there is nothing there to total.
+per-artist streams, so there is nothing there to total. The extension keeps listening
+across a switch between the two tabs: the URL changes before the tab markup catches up,
+so a check run at navigation time can still read the previous tab as selected, and an
+observer disconnected at that moment would never hear the correction.
 
 It recalculates on its own when you switch periods (24 hours / 7 days / 28 days /
 12 months), sort, filter or navigate. Nothing to click.
