@@ -48,12 +48,14 @@ roster page; values persist per browser.
 |---|---|---|
 | `s4aRatePerStream` | `0.0022` | Euro per stream |
 | `s4aArtistShare` | `0.4` | Fraction reaching the artist; `40` also accepted |
-| `s4aSpotifyShare` | `0.75` | Spotify's fraction of all streams; `75` also accepted |
+| `s4aSpotifyShare` | `0.8` | Spotify's fraction of all streams; `80` also accepted |
+| `s4aOtherRatePerStream` | `0.0029` | Euro per stream on every other store |
 
 ```js
 localStorage.setItem('s4aRatePerStream', '0.0018')
 localStorage.setItem('s4aArtistShare', '0.5')
-localStorage.setItem('s4aSpotifyShare', '0.6')
+localStorage.setItem('s4aSpotifyShare', '0.89')
+localStorage.setItem('s4aOtherRatePerStream', '0.0038')
 ```
 
 ## How it works

@@ -396,15 +396,19 @@
   //   localStorage.setItem('s4aArtistShare', '0.5')   // or '50'
   const DEFAULT_ARTIST_SHARE = 0.40;
 
-  // The roster counts Spotify streams only. Assuming Spotify is this fraction of
-  // all streams, and that the other stores pay about the same per stream, the
-  // Spotify figure scales up to an all-platform one. Both halves of that are
-  // rough: the share varies widely by catalogue, and the other stores generally
-  // pay MORE per stream than Spotify, so the result is a floor rather than a
-  // midpoint. Set your own from a distributor report that breaks revenue down
-  // by store:
-  //   localStorage.setItem('s4aSpotifyShare', '0.6')   // or '60'
-  const DEFAULT_SPOTIFY_SHARE = 0.75;
+  // The roster counts Spotify streams only, so the rest of the catalogue's
+  // volume is inferred from Spotify's share of all streams. Measured on a real
+  // statement, Spotify ran at about 89% of streams for one project and far less
+  // for another, so this is the least stable input of the three. Set your own:
+  //   localStorage.setItem('s4aSpotifyShare', '0.89')   // or '89'
+  const DEFAULT_SPOTIFY_SHARE = 0.80;
+
+  // The other stores pay more per stream than Spotify — on one statement Apple,
+  // Deezer and YouTube each paid about twice Spotify's rate, and the non-Spotify
+  // average came out around 1.46x once the near-worthless social volume was
+  // included. So they get their own rate rather than being assumed equivalent:
+  //   localStorage.setItem('s4aOtherRatePerStream', '0.0038')
+  const DEFAULT_OTHER_RATE_EUR = 0.0029;
 
   function royaltyRate() {
     try {
@@ -421,6 +425,14 @@
       if (Number.isFinite(stored) && stored > 0) return stored > 1 ? stored / 100 : stored;
     } catch (error) { /* storage unavailable; fall through to the default */ }
     return DEFAULT_ARTIST_SHARE;
+  }
+
+  function otherRate() {
+    try {
+      const stored = Number(localStorage.getItem('s4aOtherRatePerStream'));
+      if (Number.isFinite(stored) && stored > 0) return stored;
+    } catch (error) { /* storage unavailable; fall through to the default */ }
+    return DEFAULT_OTHER_RATE_EUR;
   }
 
   function spotifyShare() {
@@ -502,24 +514,29 @@
       `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
   }
 
-  // Sits under the artist share and extends it: that figure is the artist's
-  // income from Spotify alone, so dividing by Spotify's share of all streams
-  // gives the artist's income across every store.
+  // Sits under the artist share and extends it. The roster only counts Spotify
+  // streams, so the rest of the volume is inferred from Spotify's share of all
+  // streams and paid at its own rate, which is higher than Spotify's.
   function allPlatformsNode(total) {
-    const rate = royaltyRate();
-    const artist = artistShare();
     const spotify = spotifyShare();
-    const onSpotify = total * rate * artist;
-    const everywhere = onSpotify / spotify;
+    const artist = artistShare();
+    const onSpotify = total * royaltyRate();
+    const elsewhereStreams = total * ((1 - spotify) / spotify);
+    const elsewhere = elsewhereStreams * otherRate();
+    const everywhere = (onSpotify + elsewhere) * artist;
+
     const node = estimateNode(
       everywhere,
       `all platforms (Spotify ${formatPercent(spotify)}%)`,
       `Estimated artist income across every store, for the selected period. ` +
-      `${formatEuros(onSpotify)} from Spotify, taken as ${formatPercent(spotify)}% of all ` +
-      `streams at a comparable per-stream rate, gives ${formatEuros(everywhere)}. ` +
-      `Treat it as a floor: the other stores generally pay more per stream than Spotify, ` +
-      `so weighting by their real rates would put it higher. Set your own share with ` +
-      `localStorage.setItem('s4aSpotifyShare', '0.6').`);
+      `${formatNumber(total)} Spotify streams at ${formatRate(royaltyRate())} = ` +
+      `${formatEuros(onSpotify)}. Spotify is taken as ${formatPercent(spotify)}% of all ` +
+      `streams, implying ${formatNumber(Math.round(elsewhereStreams))} elsewhere at ` +
+      `${formatRate(otherRate())} = ${formatEuros(elsewhere)}. The artist's ` +
+      `${formatPercent(artist)}% of the combined ${formatEuros(onSpotify + elsewhere)} is ` +
+      `${formatEuros(everywhere)}. Set your own with ` +
+      `localStorage.setItem('s4aSpotifyShare', '0.89') and ` +
+      `localStorage.setItem('s4aOtherRatePerStream', '0.0038').`);
     node.classList.add('s4a-total-everywhere');
     return node;
   }

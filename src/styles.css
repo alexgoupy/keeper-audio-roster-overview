@@ -104,8 +104,8 @@
 .s4a-total-everywhere { opacity: .72; }
 
 /* The total line can carry two stacked estimates, which makes it taller than a
-   normal row. Its cells align to the top so every figure starts on the same
-   baseline instead of floating against the tallest cell. */
-.s4a-total-row { align-items: flex-start !important; }
-.s4a-total-row > * { vertical-align: top; align-self: flex-start; }
-.s4a-total-stack { vertical-align: top; }
+   normal row. Its cells centre against that height, so the single-line figures
+   sit level with the middle of the stacked pair. */
+.s4a-total-row { align-items: center !important; }
+.s4a-total-row > * { vertical-align: middle; align-self: center; }
+.s4a-total-stack { vertical-align: middle; }
