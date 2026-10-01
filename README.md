@@ -95,9 +95,9 @@ omitted rather than computed from partial data.
 **The royalty figures** are estimates, not earnings. Spotify has no per-stream rate: it
 pools revenue per market and divides it by share of streams, so the effective rate moves
 with listener geography and paid-versus-free mix, ranging from a fraction of the default
-to several times it. The default is a working figure taken from a real distributor
-statement rather than a published average; for reference the measured global blend in
-early 2026 was about €0.0032. Watch for promotion programmes such as Discovery Mode:
+to several times it. The default is a working figure taken from a distributor statement
+rather than a published average; for reference the measured global blend in early 2026
+was about €0.0032. Watch for promotion programmes such as Discovery Mode:
 they bill as a separate negative line against streams already paid for, so the rate
 after them is lower than the stream lines alone suggest. Gross is what reaches the rights holder before distributor and label
 splits; the artist share multiplies a second assumption on top of that. For an accurate

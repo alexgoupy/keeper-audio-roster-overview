@@ -384,11 +384,11 @@
   // measured global blend in early 2026 was about EUR 0.0032; a roster with
   // reach in lower-paying markets lands under it.
   //
-  // The default below is a working figure derived from a real distributor
-  // statement rather than a published average, and it sits under the global
-  // blend: an estimate that disappoints is better than one that flatters.
+  // The default below is a working figure taken from a distributor statement
+  // rather than a published average, and it sits under the global blend: an
+  // estimate that disappoints is better than one that flatters.
   //
-  // Two things that statement made obvious, and that a published average hides.
+  // Two things a statement makes obvious that a published average hides.
   // Promotion programmes such as Discovery Mode are billed as a separate
   // negative line against streams you have already been paid for, so the rate
   // after them is materially lower than the rate on the stream lines alone.
@@ -406,17 +406,17 @@
   const DEFAULT_ARTIST_SHARE = 0.40;
 
   // The roster counts Spotify streams only, so the rest of the catalogue's
-  // volume is inferred from Spotify's share of all streams. Measured on a real
-  // statement, Spotify ran at about 89% of streams for one project and far less
-  // for another, so this is the least stable input of the three. Set your own:
+  // volume is inferred from Spotify's share of all streams. That share swings
+  // widely between catalogues — it is the least stable of these inputs, and
+  // worth setting from a distributor report rather than left at the default:
   //   localStorage.setItem('s4aSpotifyShare', '0.89')   // or '89'
   const DEFAULT_SPOTIFY_SHARE = 0.80;
 
   // The other stores pay more per stream than Spotify, so they get their own
-  // rate rather than being assumed equivalent. Two statements from different
-  // catalogues and distributors put the non-Spotify average at EUR 0.00287 and
-  // EUR 0.00261 (EUR 0.00305 once a near-worthless social and locker volume was
-  // excluded), which this sits in the middle of:
+  // rate rather than being assumed equivalent: on a typical statement Apple,
+  // Deezer and YouTube each pay around twice Spotify's rate, while social and
+  // locker volume pays almost nothing and drags the average back down. Take
+  // yours from a distributor report that breaks revenue down by store:
   //   localStorage.setItem('s4aOtherRatePerStream', '0.0038')
   const DEFAULT_OTHER_RATE_EUR = 0.0030;
 
@@ -486,7 +486,7 @@
   // screenshots, and revenue is not something to put on screen by default. The
   // eye reveals them, and the choice holds until the page is reloaded.
   // One asterisk per digit, spaced apart, with the currency symbol and grouping
-  // left in place: "€22,154" reads "€ * *, * * *".
+  // left in place: "€12,345" reads "€ * *, * * *".
   function maskAmount(text) {
     let out = '';
     for (const character of String(text)) {
