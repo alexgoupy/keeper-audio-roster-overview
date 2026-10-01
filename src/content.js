@@ -513,7 +513,7 @@
     const everywhere = onSpotify / spotify;
     const node = estimateNode(
       everywhere,
-      `artist, all platforms (Spotify ${formatPercent(spotify)}%)`,
+      `all platforms (Spotify ${formatPercent(spotify)}%)`,
       `Estimated artist income across every store, for the selected period. ` +
       `${formatEuros(onSpotify)} from Spotify, taken as ${formatPercent(spotify)}% of all ` +
       `streams at a comparable per-stream rate, gives ${formatEuros(everywhere)}. ` +
@@ -522,6 +522,45 @@
       `localStorage.setItem('s4aSpotifyShare', '0.6').`);
     node.classList.add('s4a-total-everywhere');
     return node;
+  }
+
+  // Where the release column's trailing pill sits ("3 more", "5 more"), measured
+  // from the left edge of that cell in a real row. Returns null when there is no
+  // such pill, which is the signal to fall back to the next column.
+  function trailingPillOffset(row, cellSel, releaseIndex) {
+    if (!row || releaseIndex === -1) return null;
+    const cell = [...row.querySelectorAll(cellSel)][releaseIndex];
+    if (!cell) return null;
+    const pill = [...cell.querySelectorAll('*')]
+      .filter((el) => el.children.length === 0 && /^\s*\d+\s+\S+\s*$/.test(el.textContent || ''))
+      .pop();
+    if (!pill) return null;
+    const box = pill.getBoundingClientRect();
+    const base = cell.getBoundingClientRect();
+    if (!box.width || !base.width) return null;
+    // Zero is a legitimate answer: at narrow widths the pill wraps onto its own
+    // line at the cell's left edge, and under the pill is still under the pill.
+    const offset = box.left - base.left;
+    return offset >= 0 ? offset : null;
+  }
+
+  // Both the stacked estimates and the one already in that cell are zero-width,
+  // so at narrow widths — where the pill wraps to the cell's left edge — they
+  // would print on top of each other. Measured once the row is in the document,
+  // the stack is pushed just clear of its neighbour when it has to be.
+  function nudgeStack(line) {
+    const stack = line.querySelector('.s4a-total-stack');
+    const cell = stack && stack.parentElement;
+    if (!cell) return;
+    const neighbour = [...cell.children].find((el) =>
+      el !== stack && el.classList && el.classList.contains('s4a-total-royalty'));
+    if (!neighbour || !neighbour.children.length) return;
+
+    const cellLeft = cell.getBoundingClientRect().left;
+    const right = Math.max(...[...neighbour.children].map((el) => el.getBoundingClientRect().right));
+    const minimum = right - cellLeft + 16;
+    const current = parseFloat(stack.style.marginLeft) || 0;
+    if (minimum > current) stack.style.marginLeft = `${Math.round(minimum)}px`;
   }
 
   // The Release checklist column, right of the gross estimate.
@@ -649,14 +688,22 @@
       cells[releaseIndex].appendChild(grossNode(total, data.rows.length));
     }
 
+    // The two artist figures stack in one zero-width wrapper, so neither can
+    // widen a column. They sit under the release column's trailing pill ("3
+    // more") when one can be found — measured off a real row rather than
+    // guessed — and fall back to the checklist column otherwise.
+    const stack = document.createElement('span');
+    stack.className = 's4a-total-stack';
+    stack.append(shareNode(total), allPlatformsNode(total));
+
+    const pillOffset = trailingPillOffset(data.sampleRow, data.cellSel, releaseIndex);
     const shareIndex = checklistColumnIndex(headers, cells.length, [data.columnIndex, releaseIndex]);
-    if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
+
+    if (pillOffset != null && cells[releaseIndex]) {
+      stack.style.marginLeft = `${Math.round(pillOffset)}px`;
+      cells[releaseIndex].appendChild(stack);
+    } else if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
       cells[shareIndex].classList.add('s4a-total-cell');
-      // Two stacked estimates in one cell, inside a zero-width wrapper so
-      // neither widens the column.
-      const stack = document.createElement('span');
-      stack.className = 's4a-total-stack';
-      stack.append(shareNode(total), allPlatformsNode(total));
       cells[shareIndex].appendChild(stack);
     }
 
@@ -801,6 +848,7 @@
     clear();
     data.lastRow.insertAdjacentElement('afterend', line);
     line.insertAdjacentElement('afterend', buildCredit(line, data.cellSel));
+    nudgeStack(line);
 
     debug('total', total, 'change', change, 'period', period, 'metric', data.metric.key, 'skipped', data.skipped);
   };

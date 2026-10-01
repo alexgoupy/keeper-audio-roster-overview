@@ -33,7 +33,7 @@ page.
 | Change | Combined change against the previous period, weighted by volume |
 | Gross | Estimated royalties: streams × the per-stream rate |
 | Artist share | Estimated share of that gross reaching the artist |
-| All platforms | The artist share scaled up to every store, under the line above |
+| All platforms | The artist share scaled up to every store, stacked under it |
 
 It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
 12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab
