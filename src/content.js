@@ -375,13 +375,21 @@
   // measured global blend in early 2026 was about EUR 0.0032; a roster with
   // reach in lower-paying markets lands under it.
   //
-  // The default below is a deliberately conservative working figure, not a
-  // published average: an estimate that disappoints is better than one that
-  // flatters. The reliable number is your own — take a distributor statement,
-  // divide the Spotify revenue by the Spotify streams for the same period, and
-  // set that:
+  // The default below is a working figure derived from a real distributor
+  // statement rather than a published average, and it sits under the global
+  // blend: an estimate that disappoints is better than one that flatters.
+  //
+  // Two things that statement made obvious, and that a published average hides.
+  // Promotion programmes such as Discovery Mode are billed as a separate
+  // negative line against streams you have already been paid for, so the rate
+  // after them is materially lower than the rate on the stream lines alone.
+  // And the territory mix moves the result more than anything else.
+  //
+  // So the reliable number is your own — take a distributor statement, divide
+  // the Spotify revenue by the Spotify streams for the same period, net of any
+  // promotion lines, and set that:
   //   localStorage.setItem('s4aRatePerStream', '0.0031')
-  const DEFAULT_RATE_EUR = 0.0024;
+  const DEFAULT_RATE_EUR = 0.0022;
 
   // The cut reaching the artist after the distributor's and label's shares.
   // Every deal differs, so this is a placeholder you should set to your own:
