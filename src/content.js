@@ -367,23 +367,21 @@
   // market and divides each artist's share of streams into it, so the effective
   // rate moves with listener country, paid-vs-free mix, and the month's totals.
   //
-  // The default below is the measured global blended rate: $0.00363 per stream
-  // (Jan 2026, from an analysis of 383k royalty transactions), converted at
-  // EUR/USD ~1.138. It is what Spotify pays the rights holder, before the
-  // distributor's cut.
-  //
-  // The spread around it is enormous and driven mostly by listener geography:
+  // The spread is wide and driven mostly by listener geography:
   //   India    ~EUR 0.0007      France  ~EUR 0.0033      UK      ~EUR 0.0039
   //   Brazil   ~EUR 0.0009      US      ~EUR 0.0034      Nordics ~EUR 0.0069
-  // A roster whose audience sits in Western Europe and North America will run
-  // above this blend; one with reach in South Asia or Latin America, below it.
   // Free-tier streams pay a fraction of Premium ones, which is why markets with
-  // low paid penetration sit at the bottom of that list.
+  // low paid penetration sit at the bottom of that list. For reference, the
+  // measured global blend in early 2026 was about EUR 0.0032; a roster with
+  // reach in lower-paying markets lands under it.
   //
-  // The reliable figure is your own: take a distributor statement, divide the
-  // Spotify revenue by the Spotify streams for the same period, and set that:
+  // The default below is a deliberately conservative working figure, not a
+  // published average: an estimate that disappoints is better than one that
+  // flatters. The reliable number is your own — take a distributor statement,
+  // divide the Spotify revenue by the Spotify streams for the same period, and
+  // set that:
   //   localStorage.setItem('s4aRatePerStream', '0.0031')
-  const DEFAULT_RATE_EUR = 0.0032;
+  const DEFAULT_RATE_EUR = 0.0024;
 
   // The cut reaching the artist after the distributor's and label's shares.
   // Every deal differs, so this is a placeholder you should set to your own:
