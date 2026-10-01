@@ -534,7 +534,7 @@
     });
     const eye = root.querySelector('.s4a-total-eye');
     if (eye) {
-      eye.innerHTML = amountsHidden ? EYE : EYE_OFF;
+      eye.innerHTML = amountsHidden ? EYE_OFF : EYE;   // struck through while hidden
       eye.setAttribute('aria-pressed', String(!amountsHidden));
       eye.setAttribute('aria-label', amountsHidden ? 'Show amounts' : 'Hide amounts');
       eye.setAttribute('title', amountsHidden ? 'Show amounts' : 'Hide amounts');
@@ -616,7 +616,7 @@
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 's4a-total-eye';
-    button.innerHTML = EYE;
+    button.innerHTML = EYE_OFF;   // amounts start hidden
     button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
