@@ -5,15 +5,16 @@ Spotify for Artists roster page, `artists.spotify.com/c/roster`. Spotify shows
 per-artist figures but no roster-wide total; this fills that gap in place.
 
 ```
-Roster Overview   <streams>  ▼ <change>   👁 ≈ €*,*** @ €0.0022/stream
-                                                                       ≈ €*,*** @ 40% artist share
-                                                                       ≈ €*,*** all platforms @ €0.0030/stream, 80% Spotify
+Roster Overview   <streams>  ▼ <change>   ≈ € *, * * * @ €0.0022/stream
+                                        👁  ≈ € *, * * * artist share @ 40%
+                                            ≈ € *, * * * all platforms (80% Spotify, others @ €0.0030/stream)
                                                                                     © Keeper Audio
 ```
 
 Amounts are hidden by default — the roster gets shown in meetings and pasted into
-screenshots. The eye reveals them, masked digit for digit so nothing moves, and they
-hide again on the next page load.
+screenshots. The eye, aligned under the header's overflow control, reveals them. The
+mask runs one asterisk per digit so a hidden figure holds the same space as the real
+one, and they hide again on the next page load.
 
 All figures in this README and in the test fixtures are placeholders.
 

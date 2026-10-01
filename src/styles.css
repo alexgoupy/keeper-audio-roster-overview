@@ -111,22 +111,26 @@
 .s4a-total-row > * { vertical-align: middle; align-self: center; }
 .s4a-total-stack { vertical-align: middle; }
 
-/* Eye toggle for the amounts. It sits to the left of the first estimate, and
-   the negative margin cancels its own width so the figure stays exactly where
-   it was: the eye hangs into the cell's padding rather than pushing anything
-   right. The offsetting margin is measured in script, not fixed here. */
+/* Eye toggle for the amounts. The button is a zero-width box: the icon is
+   placed with a transform, which keeps it out of the layout entirely, so it can
+   be aligned to the header's overflow control without moving the figure it
+   belongs to. */
 .s4a-total-eye {
   appearance: none;
   border: 0;
   background: transparent;
-  color: inherit;      /* the row's own ink, so it reads as black on light */
+  color: inherit;
   opacity: 1;
-  padding: 0 7px 0 0;
+  display: inline-block;
+  width: 0;
+  padding: 0;
   margin: 0;
+  overflow: visible;
   cursor: pointer;
   line-height: 1;
-  vertical-align: -2px;
+  vertical-align: -3px;
 }
 
+.s4a-total-eye svg { display: block; }
 .s4a-total-eye:hover { opacity: .6; }
 .s4a-total-eye:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }

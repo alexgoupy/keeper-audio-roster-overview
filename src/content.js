@@ -156,10 +156,19 @@
   // Fallback when header cells aren't part of the row structure: find the
   // "Streams" label anywhere on the page and match it to the cell underneath it.
   function columnByGeometry(cellsPerRow, usableIndexes) {
+    // Matching on an element's OWN text rather than requiring a leaf: the
+    // Streams header carries an overflow button beside its label, which makes
+    // the cell a non-leaf and used to hide it from this search entirely.
+    const ownText = (el) => [...el.childNodes]
+      .filter((node) => node.nodeType === 3)
+      .map((node) => node.nodeValue)
+      .join(' ')
+      .trim();
+
     const labels = [...document.querySelectorAll('th, [role="columnheader"], span, div, button, p')]
-      .filter((el) => !el.hasAttribute(FLAG) && el.children.length === 0 && isVisible(el))
-      .map((el) => ({ el, text: textOf(el) }))
-      .filter(({ text }) => text.length < 40 && METRICS.some((m) => m.test.test(text)));
+      .filter((el) => !el.hasAttribute(FLAG) && isVisible(el))
+      .map((el) => ({ el, text: ownText(el) }))
+      .filter(({ text }) => text && text.length < 40 && METRICS.some((m) => m.test.test(text)));
     if (!labels.length) return null;
 
     const sample = cellsPerRow[0];
@@ -476,17 +485,23 @@
   // Amounts start hidden: the roster page gets shown in meetings and shared in
   // screenshots, and revenue is not something to put on screen by default. The
   // eye reveals them, and the choice holds until the page is reloaded.
-  // Masking digit for digit keeps the figure's shape — currency symbol and
-  // grouping intact — so a hidden amount occupies the same space as the real
-  // one and nothing shifts when it is revealed.
-  const maskAmount = (text) => String(text).replace(/\d/g, '*');
+  // One asterisk per digit, spaced apart, with the currency symbol and grouping
+  // left in place: "€22,154" reads "€ * *, * * *".
+  function maskAmount(text) {
+    let out = '';
+    for (const character of String(text)) {
+      if (!/\d/.test(character)) { out += character; continue; }
+      out += out ? ' *' : '*';
+    }
+    return out;
+  }
   let amountsHidden = true;
 
-  const EYE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+  const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 
-  const EYE_OFF = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+  const EYE_OFF = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 20C5 20 1 12 1 12a18.5 18.5 0 0 1 5.1-5.9m3.8-1.9A9.1 9.1 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.2 3.2m-6.7-1.1a3 3 0 1 1-4.2-4.2"/>' +
     '<line x1="1" y1="1" x2="23" y2="23"/></svg>';
@@ -496,14 +511,21 @@
   function paintAmounts(root) {
     root.querySelectorAll('.s4a-total-royalty-value').forEach((el) => {
       const amount = el.dataset.amount || '';
-      // Pin the slot to the real figure's width as well: an asterisk is not
-      // quite a digit's width even in a tabular face.
-      el.textContent = `≈ ${amount}`;
+      const masked = `≈ ${maskAmount(amount)}`;
+      const plain = `≈ ${amount}`;
+
+      // Pin the slot to whichever of the two is wider — the spaced mask is the
+      // wider one — so revealing or hiding cannot shift the caption beside it.
       if (el.isConnected && !el.style.minWidth) {
-        const width = el.getBoundingClientRect().width;
-        if (width) el.style.minWidth = `${Math.ceil(width)}px`;
+        el.textContent = plain;
+        const bare = el.getBoundingClientRect().width;
+        el.textContent = masked;
+        const hidden = el.getBoundingClientRect().width;
+        const widest = Math.max(bare, hidden);
+        if (widest) el.style.minWidth = `${Math.ceil(widest)}px`;
       }
-      if (amountsHidden) el.textContent = `≈ ${maskAmount(amount)}`;
+
+      el.textContent = amountsHidden ? masked : plain;
     });
     root.querySelectorAll('.s4a-total-royalty').forEach((el) => {
       if (!el.dataset.detail) return;
@@ -511,20 +533,44 @@
       else el.setAttribute('title', el.dataset.detail);
     });
     const eye = root.querySelector('.s4a-total-eye');
-    if (eye && eye.isConnected) {
-      // Cancel the eye's own width so the figure beside it keeps its position:
-      // measured rather than assumed, since the icon's box depends on the
-      // page's font metrics as much as on our padding.
-      eye.style.marginLeft = '0px';
-      const width = eye.getBoundingClientRect().width;
-      if (width) eye.style.marginLeft = `-${Math.round(width)}px`;
-    }
     if (eye) {
       eye.innerHTML = amountsHidden ? EYE : EYE_OFF;
       eye.setAttribute('aria-pressed', String(!amountsHidden));
       eye.setAttribute('aria-label', amountsHidden ? 'Show amounts' : 'Hide amounts');
       eye.setAttribute('title', amountsHidden ? 'Show amounts' : 'Hide amounts');
     }
+  }
+
+  // The overflow control at the right of the Streams column header: a run of
+  // dots, or failing that a button that calls itself a menu.
+  function headerEllipsis(root) {
+    const scope = (root && root.isConnected ? root : document);
+    const header = scope.querySelector('thead') || scope;
+    const dots = [...header.querySelectorAll('*')]
+      .filter((el) => el.children.length === 0)
+      .find((el) => /^[.\u00b7\u2022\u2026\u22ef]{2,}$/.test((el.textContent || '').replace(/\s+/g, '')));
+    if (dots) return dots;
+    return [...header.querySelectorAll('button, [role="button"]')].find((el) =>
+      /more|option|menu/i.test(el.getAttribute('aria-label') || el.getAttribute('title') || '')) || null;
+  }
+
+  // The eye takes no width of its own — the button is a zero-width box and the
+  // icon is painted off it with a transform, which does not affect layout. That
+  // way it can be placed anywhere along the row without dragging the figure
+  // beside it, which a margin would.
+  function positionEye(line, data) {
+    const eye = line.querySelector('.s4a-total-eye');
+    const icon = eye && eye.firstElementChild;
+    if (!eye || !icon || !eye.isConnected) return;
+
+    icon.style.transform = 'none';
+    const from = icon.getBoundingClientRect();
+    const target = headerEllipsis(data && data.root);
+    const to = target ? target.getBoundingClientRect() : null;
+
+    // Without a target, sit just left of the figure instead.
+    const delta = to ? to.left - from.left : -(from.width + 7);
+    icon.style.transform = `translateX(${Math.round(delta)}px)`;
   }
 
   function eyeToggle() {
@@ -537,7 +583,7 @@
       event.stopPropagation();
       amountsHidden = !amountsHidden;
       const row = button.closest(`[${FLAG}]`);
-      if (row) paintAmounts(row);
+      if (row) { paintAmounts(row); positionEye(row, lastData); }
     });
     return button;
   }
@@ -578,7 +624,7 @@
     const percent = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(share * 100);
     return estimateNode(
       total * royaltyRate() * share,
-      `@ ${percent}% artist share`,
+      `artist share @ ${percent}%`,
       `Estimated artist share: ${percent}% of the gross estimate beside it, i.e. what ` +
       `reaches the artist after distributor and label cuts. This split is a placeholder — ` +
       `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
@@ -597,7 +643,7 @@
 
     const node = estimateNode(
       everywhere,
-      `all platforms @ ${formatRate(otherRate())}/stream, ${formatPercent(spotify)}% Spotify`,
+      `all platforms (${formatPercent(spotify)}% Spotify, others @ ${formatRate(otherRate())}/stream)`,
       `Estimated artist income across every store, for the selected period. ` +
       `${formatNumber(total)} Spotify streams at ${formatRate(royaltyRate())} = ` +
       `${formatEuros(onSpotify)}. Spotify is taken as ${formatPercent(spotify)}% of all ` +
@@ -898,6 +944,7 @@
   }
 
   let lastSignature = null;
+  let lastData = null;
 
   let render = function render(force = false) {
     const existing = [...document.querySelectorAll(`[${FLAG}]`)];
@@ -910,6 +957,7 @@
     }
 
     const data = collectRoster();
+    lastData = data;
     if (!data) {
       clear();
       lastSignature = null;
@@ -934,6 +982,7 @@
     // Repaint now that the row is laid out: the widths behind the mask can only
     // be measured once the text has a box, and alignment reads the result.
     paintAmounts(line);
+    positionEye(line, data);
     alignStackToPill(line, data, releaseColumnIndex(data.headers || [],
       line.querySelectorAll(data.cellSel).length, data.columnIndex));
 
