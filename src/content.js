@@ -528,7 +528,7 @@
 
     const node = estimateNode(
       everywhere,
-      `all platforms (Spotify ${formatPercent(spotify)}%)`,
+      `all platforms (Spotify ${formatPercent(spotify)}% \u00b7 others @ ${formatRate(otherRate())}/stream)`,
       `Estimated artist income across every store, for the selected period. ` +
       `${formatNumber(total)} Spotify streams at ${formatRate(royaltyRate())} = ` +
       `${formatEuros(onSpotify)}. Spotify is taken as ${formatPercent(spotify)}% of all ` +
