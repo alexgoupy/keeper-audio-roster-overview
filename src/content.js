@@ -556,10 +556,14 @@
     const box = pill.getBoundingClientRect();
     const base = cell.getBoundingClientRect();
     if (!box.width || !base.width) return null;
+    // Measured from the cell's CONTENT box, because that is what margin-left is
+    // relative to. Measuring from the border box instead adds the cell's own
+    // padding to the result and pushes the stack right by that much.
+    const padding = parseFloat(getComputedStyle(cell).paddingLeft) || 0;
+    const offset = box.left - base.left - padding;
     // Zero is a legitimate answer: at narrow widths the pill wraps onto its own
     // line at the cell's left edge, and under the pill is still under the pill.
-    const offset = box.left - base.left;
-    return offset >= 0 ? offset : null;
+    return Math.max(0, offset);
   }
 
   // The Release checklist column, right of the gross estimate.
