@@ -33,7 +33,7 @@ page.
 | Change | Combined change against the previous period, weighted by volume |
 | Gross | Estimated royalties: streams × the per-stream rate |
 | Artist share | Estimated share of that gross reaching the artist |
-| All platforms | The same streams scaled up to every store, under the line above |
+| All platforms | The artist share scaled up to every store, under the line above |
 
 It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
 12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab
@@ -94,9 +94,9 @@ splits; the artist share multiplies a second assumption on top of that. For an a
 figure, divide Spotify revenue by Spotify streams on a distributor statement covering
 the same period, and set that as the rate.
 
-**The all-platform line** scales the Spotify figure up to every store, on the assumption
-that Spotify is a given fraction of all streams and that the other stores pay roughly
-the same per stream. Both halves are rough. The share varies widely by catalogue — two
+**The all-platform line** extends the artist share: that figure covers Spotify alone, so
+dividing it by Spotify's fraction of all streams gives the artist's income everywhere,
+on the assumption that the other stores pay roughly the same per stream. Both halves are rough. The share varies widely by catalogue — two
 real statements put Spotify at 59% and 78% of revenue — and the other stores generally
 pay *more* per stream than Spotify, so the result reads as a floor rather than a
 midpoint. A distributor report broken down by store gives you the real share.

@@ -502,21 +502,23 @@
       `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
   }
 
-  // Sits under the artist share: the same streams scaled up to every store.
+  // Sits under the artist share and extends it: that figure is the artist's
+  // income from Spotify alone, so dividing by Spotify's share of all streams
+  // gives the artist's income across every store.
   function allPlatformsNode(total) {
     const rate = royaltyRate();
-    const share = spotifyShare();
-    const onSpotify = total * rate;
-    const everywhere = onSpotify / share;
+    const artist = artistShare();
+    const spotify = spotifyShare();
+    const onSpotify = total * rate * artist;
+    const everywhere = onSpotify / spotify;
     const node = estimateNode(
       everywhere,
-      `all platforms (Spotify ${formatPercent(share)}%)`,
-      `Estimated gross revenue across every store, for the selected period. ` +
-      `${formatEuros(onSpotify)} on Spotify, taken as ${formatPercent(share)}% of all ` +
-      `streams at a comparable per-stream rate, gives ${formatEuros(everywhere)}; the ` +
-      `artist's ${formatPercent(artistShare())}% of that is ` +
-      `${formatEuros(everywhere * artistShare())}. Treat it as a floor: the other stores ` +
-      `generally pay more per stream than Spotify. Set your own share with ` +
+      `artist, all platforms (Spotify ${formatPercent(spotify)}%)`,
+      `Estimated artist income across every store, for the selected period. ` +
+      `${formatEuros(onSpotify)} from Spotify, taken as ${formatPercent(spotify)}% of all ` +
+      `streams at a comparable per-stream rate, gives ${formatEuros(everywhere)}. ` +
+      `Treat it as a floor: the other stores generally pay more per stream than Spotify, ` +
+      `so weighting by their real rates would put it higher. Set your own share with ` +
       `localStorage.setItem('s4aSpotifyShare', '0.6').`);
     node.classList.add('s4a-total-everywhere');
     return node;
