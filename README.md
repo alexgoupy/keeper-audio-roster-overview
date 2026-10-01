@@ -5,9 +5,15 @@ Spotify for Artists roster page, `artists.spotify.com/c/roster`. Spotify shows
 per-artist figures but no roster-wide total; this fills that gap in place.
 
 ```
-Roster Overview   <streams>  ▼ <change>   ≈ €<gross> @ €<rate>/stream   ≈ €<share> artist share (<n>%)
-                                                                                      © Keeper Audio
+Roster Overview   <streams>  ▼ <change>   ≈ €*,*** @ €0.0022/stream  👁
+                                                                       ≈ €*,*** @ 40% artist share
+                                                                       ≈ €*,*** all platforms @ €0.0030/stream, 80% Spotify
+                                                                                    © Keeper Audio
 ```
+
+Amounts are hidden by default — the roster gets shown in meetings and pasted into
+screenshots. The eye reveals them, masked digit for digit so nothing moves, and they
+hide again on the next page load.
 
 All figures in this README and in the test fixtures are placeholders.
 
@@ -34,6 +40,7 @@ page.
 | Gross | Estimated royalties: streams × the per-stream rate |
 | Artist share | Estimated share of that gross reaching the artist |
 | All platforms | The artist share scaled up to every store, stacked under it |
+| 👁 | Reveals the amounts, hidden by default |
 
 It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
 12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab

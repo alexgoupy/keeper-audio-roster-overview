@@ -48,6 +48,7 @@
 }
 
 .s4a-total-royalty-value {
+  display: inline-block;      /* so the pinned min-width applies */
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -109,3 +110,21 @@
 .s4a-total-row { align-items: center !important; }
 .s4a-total-row > * { vertical-align: middle; align-self: center; }
 .s4a-total-stack { vertical-align: middle; }
+
+/* Eye toggle for the amounts. Inside the zero-width wrapper with the estimate
+   it follows, so showing it cannot shift that estimate or widen the column. */
+.s4a-total-eye {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  opacity: .45;
+  padding: 0 0 0 7px;
+  margin: 0;
+  cursor: pointer;
+  line-height: 1;
+  vertical-align: -2px;
+}
+
+.s4a-total-eye:hover { opacity: .85; }
+.s4a-total-eye:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; opacity: .85; }

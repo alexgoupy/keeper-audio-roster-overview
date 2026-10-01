@@ -473,20 +473,81 @@
     return next < cellCount ? next : -1;
   }
 
+  // Amounts start hidden: the roster page gets shown in meetings and shared in
+  // screenshots, and revenue is not something to put on screen by default. The
+  // eye reveals them, and the choice holds until the page is reloaded.
+  // Masking digit for digit keeps the figure's shape — currency symbol and
+  // grouping intact — so a hidden amount occupies the same space as the real
+  // one and nothing shifts when it is revealed.
+  const maskAmount = (text) => String(text).replace(/\d/g, '*');
+  let amountsHidden = true;
+
+  const EYE = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+
+  const EYE_OFF = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M17.9 17.9A10.1 10.1 0 0 1 12 20C5 20 1 12 1 12a18.5 18.5 0 0 1 5.1-5.9m3.8-1.9A9.1 9.1 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.2 3.2m-6.7-1.1a3 3 0 1 1-4.2-4.2"/>' +
+    '<line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+  // Repaints every amount in the line, and the tooltips, which quote the same
+  // figures and would otherwise give them away on hover.
+  function paintAmounts(root) {
+    root.querySelectorAll('.s4a-total-royalty-value').forEach((el) => {
+      const amount = el.dataset.amount || '';
+      // Pin the slot to the real figure's width as well: an asterisk is not
+      // quite a digit's width even in a tabular face.
+      el.textContent = `≈ ${amount}`;
+      if (el.isConnected && !el.style.minWidth) {
+        const width = el.getBoundingClientRect().width;
+        if (width) el.style.minWidth = `${Math.ceil(width)}px`;
+      }
+      if (amountsHidden) el.textContent = `≈ ${maskAmount(amount)}`;
+    });
+    root.querySelectorAll('.s4a-total-royalty').forEach((el) => {
+      if (!el.dataset.detail) return;
+      if (amountsHidden) el.removeAttribute('title');
+      else el.setAttribute('title', el.dataset.detail);
+    });
+    const eye = root.querySelector('.s4a-total-eye');
+    if (eye) {
+      eye.innerHTML = amountsHidden ? EYE : EYE_OFF;
+      eye.setAttribute('aria-pressed', String(!amountsHidden));
+      eye.setAttribute('aria-label', amountsHidden ? 'Show amounts' : 'Hide amounts');
+      eye.setAttribute('title', amountsHidden ? 'Show amounts' : 'Hide amounts');
+    }
+  }
+
+  function eyeToggle() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 's4a-total-eye';
+    button.innerHTML = EYE;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      amountsHidden = !amountsHidden;
+      const row = button.closest(`[${FLAG}]`);
+      if (row) paintAmounts(row);
+    });
+    return button;
+  }
+
   function estimateNode(amount, caption, title) {
     const wrap = document.createElement('span');
     wrap.className = 's4a-total-royalty';
+    wrap.dataset.detail = title;
 
     const value = document.createElement('span');
     value.className = 's4a-total-royalty-value';
-    value.textContent = `≈ ${formatEuros(amount)}`;
+    value.dataset.amount = formatEuros(amount);
 
     const note = document.createElement('span');
     note.className = 's4a-total-rate';
     note.textContent = ` ${caption}`;
 
     wrap.append(value, note);
-    wrap.setAttribute('title', title);
     return wrap;
   }
 
@@ -494,7 +555,7 @@
     const rate = royaltyRate();
     return estimateNode(
       total * rate,
-      `est. @ ${formatRate(rate)}/stream`,
+      `@ ${formatRate(rate)}/stream`,
       `Estimated gross royalties for the selected period: ${formatNumber(total)} streams ` +
       `across ${count} artists x ${formatRate(rate)}. That default is the measured global ` +
       `blended rate (~$0.00363/stream, Jan 2026) converted to euros. Real rates run from ` +
@@ -509,7 +570,7 @@
     const percent = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(share * 100);
     return estimateNode(
       total * royaltyRate() * share,
-      `artist share (${percent}%)`,
+      `@ ${percent}% artist share`,
       `Estimated artist share: ${percent}% of the gross estimate beside it, i.e. what ` +
       `reaches the artist after distributor and label cuts. This split is a placeholder — ` +
       `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
@@ -528,7 +589,7 @@
 
     const node = estimateNode(
       everywhere,
-      `all platforms (Spotify ${formatPercent(spotify)}% \u00b7 others @ ${formatRate(otherRate())}/stream)`,
+      `all platforms @ ${formatRate(otherRate())}/stream, ${formatPercent(spotify)}% Spotify`,
       `Estimated artist income across every store, for the selected period. ` +
       `${formatNumber(total)} Spotify streams at ${formatRate(royaltyRate())} = ` +
       `${formatEuros(onSpotify)}. Spotify is taken as ${formatPercent(spotify)}% of all ` +
@@ -694,7 +755,9 @@
     const releaseIndex = releaseColumnIndex(headers, cells.length, data.columnIndex);
     if (releaseIndex !== -1 && cells[releaseIndex] && cells[releaseIndex] !== valueCell) {
       cells[releaseIndex].classList.add('s4a-total-cell');
-      cells[releaseIndex].appendChild(grossNode(total, data.rows.length));
+      const gross = grossNode(total, data.rows.length);
+      gross.appendChild(eyeToggle());   // after the caption, so nothing shifts
+      cells[releaseIndex].appendChild(gross);
     }
 
     // The two artist figures stack in one zero-width wrapper, so neither can
@@ -724,6 +787,7 @@
       valueCell.prepend(label, document.createTextNode(' '));
     }
 
+    paintAmounts(row);
     return row;
   }
 
@@ -776,7 +840,10 @@
     box.querySelector('.s4a-total-label').textContent = 'Roster Overview';
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
-    box.append(grossNode(total, data.rows.length), shareNode(total), allPlatformsNode(total));
+    const grossBox = grossNode(total, data.rows.length);
+    grossBox.appendChild(eyeToggle());
+    box.append(grossBox, shareNode(total), allPlatformsNode(total));
+    paintAmounts(box);
     return box;
   }
 
@@ -856,6 +923,9 @@
     clear();
     data.lastRow.insertAdjacentElement('afterend', line);
     line.insertAdjacentElement('afterend', buildCredit(line, data.cellSel));
+    // Repaint now that the row is laid out: the widths behind the mask can only
+    // be measured once the text has a box, and alignment reads the result.
+    paintAmounts(line);
     alignStackToPill(line, data, releaseColumnIndex(data.headers || [],
       line.querySelectorAll(data.cellSel).length, data.columnIndex));
 
