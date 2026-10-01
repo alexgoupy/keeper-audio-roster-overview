@@ -542,31 +542,37 @@
     return node;
   }
 
-  // Where the release column's trailing pill sits ("3 more", "5 more"), measured
-  // from the left edge of that cell in a real row. Returns null when there is no
-  // such pill, which is the signal to fall back to the next column.
-  function trailingPillOffset(row, cellSel, releaseIndex) {
+  // The release column's trailing pill ("3 more"), taken from a real row.
+  function trailingPill(row, cellSel, releaseIndex) {
     if (!row || releaseIndex === -1) return null;
     const cell = [...row.querySelectorAll(cellSel)][releaseIndex];
     if (!cell) return null;
-    const pill = [...cell.querySelectorAll('*')]
+    return [...cell.querySelectorAll('*')]
       .filter((el) => el.children.length === 0 && /^\s*\d+\s+\S+\s*$/.test(el.textContent || ''))
-      .pop();
-    if (!pill) return null;
-    const box = pill.getBoundingClientRect();
-    const base = cell.getBoundingClientRect();
-    if (!box.width || !base.width) return null;
-    // Measured from the cell's CONTENT box, because that is what margin-left is
-    // relative to. Measuring from the border box instead adds the cell's own
-    // padding to the result and pushes the stack right by that much.
-    const padding = parseFloat(getComputedStyle(cell).paddingLeft) || 0;
-    const offset = box.left - base.left - padding;
-    // Zero is a legitimate answer: at narrow widths the pill wraps onto its own
-    // line at the cell's left edge, and under the pill is still under the pill.
-    return Math.max(0, offset);
+      .pop() || null;
   }
 
-  // The Release checklist column, right of the gross estimate.
+  // Line the stack up with that pill by measuring, not by arithmetic. Working
+  // out a margin from the pill's offset means reasoning about which box the
+  // offset was measured from and which box the margin applies to, and a cell's
+  // padding lands squarely between the two. Reading back where the stack
+  // actually rendered and correcting the difference sidesteps all of that.
+  function alignStackToPill(line, data, releaseIndex) {
+    const stack = line.querySelector('.s4a-total-stack');
+    if (!stack || !stack.isConnected) return;
+    const pill = trailingPill(data.sampleRow, data.cellSel, releaseIndex);
+    if (!pill) return;
+
+    const target = pill.getBoundingClientRect().left;
+    const marker = stack.querySelector('.s4a-total-royalty-value') || stack;
+    const current = marker.getBoundingClientRect().left;
+    if (!target || !current) return;
+
+    const margin = (parseFloat(stack.style.marginLeft) || 0) + (target - current);
+    stack.style.marginLeft = `${Math.round(margin)}px`;
+  }
+
+  // The Release checklist column, right of the gross estimate.  // The Release checklist column, right of the gross estimate.
   function checklistColumnIndex(headers, cellCount, taken) {
     const found = headers.findIndex((header) => header &&
       /checklist|check-list|aufgaben|lista de tareas/i.test(header));
@@ -699,12 +705,11 @@
     stack.className = 's4a-total-stack';
     stack.append(shareNode(total), allPlatformsNode(total));
 
-    const pillOffset = trailingPillOffset(data.sampleRow, data.cellSel, releaseIndex);
+    const pill = trailingPill(data.sampleRow, data.cellSel, releaseIndex);
     const shareIndex = checklistColumnIndex(headers, cells.length, [data.columnIndex, releaseIndex]);
 
-    if (pillOffset != null && cells[releaseIndex]) {
-      stack.style.marginLeft = `${Math.round(pillOffset)}px`;
-      cells[releaseIndex].appendChild(stack);
+    if (pill && cells[releaseIndex]) {
+      cells[releaseIndex].appendChild(stack);   // positioned after layout
     } else if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
       cells[shareIndex].classList.add('s4a-total-cell');
       cells[shareIndex].appendChild(stack);
@@ -851,6 +856,8 @@
     clear();
     data.lastRow.insertAdjacentElement('afterend', line);
     line.insertAdjacentElement('afterend', buildCredit(line, data.cellSel));
+    alignStackToPill(line, data, releaseColumnIndex(data.headers || [],
+      line.querySelectorAll(data.cellSel).length, data.columnIndex));
 
     debug('total', total, 'change', change, 'period', period, 'metric', data.metric.key, 'skipped', data.skipped);
   };
