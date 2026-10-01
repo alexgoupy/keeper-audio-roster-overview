@@ -33,6 +33,7 @@ page.
 | Change | Combined change against the previous period, weighted by volume |
 | Gross | Estimated royalties: streams × the per-stream rate |
 | Artist share | Estimated share of that gross reaching the artist |
+| All platforms | The same streams scaled up to every store, under the line above |
 
 It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
 12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab
@@ -47,10 +48,12 @@ roster page; values persist per browser.
 |---|---|---|
 | `s4aRatePerStream` | `0.0022` | Euro per stream |
 | `s4aArtistShare` | `0.4` | Fraction reaching the artist; `40` also accepted |
+| `s4aSpotifyShare` | `0.75` | Spotify's fraction of all streams; `75` also accepted |
 
 ```js
-localStorage.setItem('s4aRatePerStream', '0.0031')
+localStorage.setItem('s4aRatePerStream', '0.0018')
 localStorage.setItem('s4aArtistShare', '0.5')
+localStorage.setItem('s4aSpotifyShare', '0.6')
 ```
 
 ## How it works
@@ -90,6 +93,13 @@ after them is lower than the stream lines alone suggest. Gross is what reaches t
 splits; the artist share multiplies a second assumption on top of that. For an accurate
 figure, divide Spotify revenue by Spotify streams on a distributor statement covering
 the same period, and set that as the rate.
+
+**The all-platform line** scales the Spotify figure up to every store, on the assumption
+that Spotify is a given fraction of all streams and that the other stores pay roughly
+the same per stream. Both halves are rough. The share varies widely by catalogue — two
+real statements put Spotify at 59% and 78% of revenue — and the other stores generally
+pay *more* per stream than Spotify, so the result reads as a floor rather than a
+midpoint. A distributor report broken down by store gives you the real share.
 
 **Rendering.** The line is a clone of a real roster row: other cells are emptied, but the
 value cell is edited in place, so it inherits the page's column widths, padding, borders

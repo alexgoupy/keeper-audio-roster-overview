@@ -396,6 +396,16 @@
   //   localStorage.setItem('s4aArtistShare', '0.5')   // or '50'
   const DEFAULT_ARTIST_SHARE = 0.40;
 
+  // The roster counts Spotify streams only. Assuming Spotify is this fraction of
+  // all streams, and that the other stores pay about the same per stream, the
+  // Spotify figure scales up to an all-platform one. Both halves of that are
+  // rough: the share varies widely by catalogue, and the other stores generally
+  // pay MORE per stream than Spotify, so the result is a floor rather than a
+  // midpoint. Set your own from a distributor report that breaks revenue down
+  // by store:
+  //   localStorage.setItem('s4aSpotifyShare', '0.6')   // or '60'
+  const DEFAULT_SPOTIFY_SHARE = 0.75;
+
   function royaltyRate() {
     try {
       const stored = Number(localStorage.getItem('s4aRatePerStream'));
@@ -412,6 +422,19 @@
     } catch (error) { /* storage unavailable; fall through to the default */ }
     return DEFAULT_ARTIST_SHARE;
   }
+
+  function spotifyShare() {
+    try {
+      const stored = Number(localStorage.getItem('s4aSpotifyShare'));
+      // Accepts either a fraction (0.75) or a percentage (75).
+      const value = stored > 1 ? stored / 100 : stored;
+      if (Number.isFinite(value) && value > 0 && value <= 1) return value;
+    } catch (error) { /* storage unavailable; fall through to the default */ }
+    return DEFAULT_SPOTIFY_SHARE;
+  }
+
+  const formatPercent = (fraction) =>
+    new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(fraction * 100);
 
   const formatEuros = (amount) => new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -477,6 +500,26 @@
       `Estimated artist share: ${percent}% of the gross estimate beside it, i.e. what ` +
       `reaches the artist after distributor and label cuts. This split is a placeholder — ` +
       `set your own with localStorage.setItem('s4aArtistShare', '0.5').`);
+  }
+
+  // Sits under the artist share: the same streams scaled up to every store.
+  function allPlatformsNode(total) {
+    const rate = royaltyRate();
+    const share = spotifyShare();
+    const onSpotify = total * rate;
+    const everywhere = onSpotify / share;
+    const node = estimateNode(
+      everywhere,
+      `all platforms (Spotify ${formatPercent(share)}%)`,
+      `Estimated gross revenue across every store, for the selected period. ` +
+      `${formatEuros(onSpotify)} on Spotify, taken as ${formatPercent(share)}% of all ` +
+      `streams at a comparable per-stream rate, gives ${formatEuros(everywhere)}; the ` +
+      `artist's ${formatPercent(artistShare())}% of that is ` +
+      `${formatEuros(everywhere * artistShare())}. Treat it as a floor: the other stores ` +
+      `generally pay more per stream than Spotify. Set your own share with ` +
+      `localStorage.setItem('s4aSpotifyShare', '0.6').`);
+    node.classList.add('s4a-total-everywhere');
+    return node;
   }
 
   // The Release checklist column, right of the gross estimate.
@@ -607,7 +650,12 @@
     const shareIndex = checklistColumnIndex(headers, cells.length, [data.columnIndex, releaseIndex]);
     if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
       cells[shareIndex].classList.add('s4a-total-cell');
-      cells[shareIndex].appendChild(shareNode(total));
+      // Two stacked estimates in one cell, inside a zero-width wrapper so
+      // neither widens the column.
+      const stack = document.createElement('span');
+      stack.className = 's4a-total-stack';
+      stack.append(shareNode(total), allPlatformsNode(total));
+      cells[shareIndex].appendChild(stack);
     }
 
     const labelIndex = data.columnIndex === 0 ? Math.min(1, cells.length - 1) : 0;
@@ -671,7 +719,7 @@
     box.querySelector('.s4a-total-label').textContent = 'Roster Overview';
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
-    box.append(grossNode(total, data.rows.length), shareNode(total));
+    box.append(grossNode(total, data.rows.length), shareNode(total), allPlatformsNode(total));
     return box;
   }
 

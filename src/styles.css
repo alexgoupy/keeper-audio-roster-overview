@@ -89,3 +89,16 @@
 }
 
 .s4a-total-credit-row td { border: 0 !important; background: transparent !important; }
+
+/* Two estimates stacked in one cell. The wrapper carries the zero-width trick
+   so neither line can widen the column; the children stack inside it. */
+.s4a-total-stack {
+  display: inline-block;
+  width: 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.s4a-total-stack .s4a-total-royalty { display: block; width: auto; }
+
+.s4a-total-everywhere { opacity: .72; }
