@@ -541,17 +541,49 @@
     }
   }
 
-  // The overflow control at the right of the Streams column header: a run of
-  // dots, or failing that a button that calls itself a menu.
-  function headerEllipsis(root) {
-    const scope = (root && root.isConnected ? root : document);
-    const header = scope.querySelector('thead') || scope;
-    const dots = [...header.querySelectorAll('*')]
-      .filter((el) => el.children.length === 0)
-      .find((el) => /^[.\u00b7\u2022\u2026\u22ef]{2,}$/.test((el.textContent || '').replace(/\s+/g, '')));
-    if (dots) return dots;
-    return [...header.querySelectorAll('button, [role="button"]')].find((el) =>
-      /more|option|menu/i.test(el.getAttribute('aria-label') || el.getAttribute('title') || '')) || null;
+  // The overflow control at the right of the Streams column header. On the real
+  // page it is an icon-only button, not text, so three ways of recognising it:
+  // a run of dots written out, a control that names itself in aria-label, or an
+  // icon button sitting in the header with no words at all.
+  function headerEllipsis(root, nearX) {
+    const scope = root && root.isConnected ? root : document;
+    const head = scope.querySelector('thead') ||
+      scope.querySelector('[role="rowgroup"]') ||
+      scope;
+
+    const ownText = (el) => [...el.childNodes]
+      .filter((node) => node.nodeType === 3)
+      .map((node) => node.nodeValue)
+      .join('')
+      .trim();
+
+    const candidates = [...head.querySelectorAll('*')].filter((el) =>
+      !el.hasAttribute(FLAG) && !el.closest(`[${FLAG}]`) && isVisible(el));
+
+    // Nearest to the Streams column wins, so a header with several icon
+    // buttons still resolves to the one beside the figures.
+    const nearest = (list) => {
+      if (!list.length) return null;
+      if (!Number.isFinite(nearX)) return list[0];
+      return list.reduce((best, el) => {
+        const distance = Math.abs(el.getBoundingClientRect().left - nearX);
+        return !best || distance < best.distance ? { el, distance } : best;
+      }, null).el;
+    };
+
+    const dots = candidates.filter((el) =>
+      /^[.\u00b7\u2022\u2026\u22ef]{2,}$/.test(ownText(el).replace(/\s+/g, '')));
+    if (dots.length) return nearest(dots);
+
+    const named = candidates.filter((el) =>
+      /more|option|menu|column|colonne|param/i.test(
+        `${el.getAttribute('aria-label') || ''} ${el.getAttribute('title') || ''}`));
+    if (named.length) return nearest(named);
+
+    const iconOnly = candidates
+      .filter((el) => el.tagName === 'BUTTON' || el.getAttribute('role') === 'button')
+      .filter((el) => !ownText(el) && !el.textContent.trim() && el.querySelector('svg'));
+    return nearest(iconOnly);
   }
 
   // The eye takes no width of its own — the button is a zero-width box and the
@@ -565,7 +597,14 @@
 
     icon.style.transform = 'none';
     const from = icon.getBoundingClientRect();
-    const target = headerEllipsis(data && data.root);
+
+    // The right edge of the Streams column, which is where that control sits.
+    let nearX;
+    if (data && data.sampleRow && data.cellSel) {
+      const valueCell = [...data.sampleRow.querySelectorAll(data.cellSel)][data.columnIndex];
+      if (valueCell) nearX = valueCell.getBoundingClientRect().right;
+    }
+    const target = headerEllipsis(data && data.root, nearX);
     const to = target ? target.getBoundingClientRect() : null;
 
     // Without a target, sit just left of the figure instead.
