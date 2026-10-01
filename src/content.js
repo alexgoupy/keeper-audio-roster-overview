@@ -403,12 +403,13 @@
   //   localStorage.setItem('s4aSpotifyShare', '0.89')   // or '89'
   const DEFAULT_SPOTIFY_SHARE = 0.80;
 
-  // The other stores pay more per stream than Spotify — on one statement Apple,
-  // Deezer and YouTube each paid about twice Spotify's rate, and the non-Spotify
-  // average came out around 1.46x once the near-worthless social volume was
-  // included. So they get their own rate rather than being assumed equivalent:
+  // The other stores pay more per stream than Spotify, so they get their own
+  // rate rather than being assumed equivalent. Two statements from different
+  // catalogues and distributors put the non-Spotify average at EUR 0.00287 and
+  // EUR 0.00261 (EUR 0.00305 once a near-worthless social and locker volume was
+  // excluded), which this sits in the middle of:
   //   localStorage.setItem('s4aOtherRatePerStream', '0.0038')
-  const DEFAULT_OTHER_RATE_EUR = 0.0029;
+  const DEFAULT_OTHER_RATE_EUR = 0.0030;
 
   function royaltyRate() {
     try {
