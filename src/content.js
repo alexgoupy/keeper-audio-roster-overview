@@ -544,25 +544,6 @@
     return offset >= 0 ? offset : null;
   }
 
-  // Both the stacked estimates and the one already in that cell are zero-width,
-  // so at narrow widths — where the pill wraps to the cell's left edge — they
-  // would print on top of each other. Measured once the row is in the document,
-  // the stack is pushed just clear of its neighbour when it has to be.
-  function nudgeStack(line) {
-    const stack = line.querySelector('.s4a-total-stack');
-    const cell = stack && stack.parentElement;
-    if (!cell) return;
-    const neighbour = [...cell.children].find((el) =>
-      el !== stack && el.classList && el.classList.contains('s4a-total-royalty'));
-    if (!neighbour || !neighbour.children.length) return;
-
-    const cellLeft = cell.getBoundingClientRect().left;
-    const right = Math.max(...[...neighbour.children].map((el) => el.getBoundingClientRect().right));
-    const minimum = right - cellLeft + 16;
-    const current = parseFloat(stack.style.marginLeft) || 0;
-    if (minimum > current) stack.style.marginLeft = `${Math.round(minimum)}px`;
-  }
-
   // The Release checklist column, right of the gross estimate.
   function checklistColumnIndex(headers, cellCount, taken) {
     const found = headers.findIndex((header) => header &&
@@ -848,7 +829,6 @@
     clear();
     data.lastRow.insertAdjacentElement('afterend', line);
     line.insertAdjacentElement('afterend', buildCredit(line, data.cellSel));
-    nudgeStack(line);
 
     debug('total', total, 'change', change, 'period', period, 'metric', data.metric.key, 'skipped', data.skipped);
   };
@@ -948,6 +928,10 @@
     });
     poll.observe(document.body, { childList: true, subtree: true });
   }
+
+  // The stacked estimates are positioned from a measurement taken at render
+  // time, so a width change leaves that measurement stale. Resizing redraws.
+  addEventListener('resize', () => { lastSignature = null; schedule(); });
 
   onLocation();
   debug('loaded on', location.href);

@@ -102,3 +102,10 @@
 .s4a-total-stack .s4a-total-royalty { display: block; width: auto; }
 
 .s4a-total-everywhere { opacity: .72; }
+
+/* The total line can carry two stacked estimates, which makes it taller than a
+   normal row. Its cells align to the top so every figure starts on the same
+   baseline instead of floating against the tallest cell. */
+.s4a-total-row { align-items: flex-start !important; }
+.s4a-total-row > * { vertical-align: top; align-self: flex-start; }
+.s4a-total-stack { vertical-align: top; }
