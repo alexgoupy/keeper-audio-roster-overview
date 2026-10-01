@@ -511,6 +511,14 @@
       else el.setAttribute('title', el.dataset.detail);
     });
     const eye = root.querySelector('.s4a-total-eye');
+    if (eye && eye.isConnected) {
+      // Cancel the eye's own width so the figure beside it keeps its position:
+      // measured rather than assumed, since the icon's box depends on the
+      // page's font metrics as much as on our padding.
+      eye.style.marginLeft = '0px';
+      const width = eye.getBoundingClientRect().width;
+      if (width) eye.style.marginLeft = `-${Math.round(width)}px`;
+    }
     if (eye) {
       eye.innerHTML = amountsHidden ? EYE : EYE_OFF;
       eye.setAttribute('aria-pressed', String(!amountsHidden));
@@ -756,7 +764,7 @@
     if (releaseIndex !== -1 && cells[releaseIndex] && cells[releaseIndex] !== valueCell) {
       cells[releaseIndex].classList.add('s4a-total-cell');
       const gross = grossNode(total, data.rows.length);
-      gross.appendChild(eyeToggle());   // after the caption, so nothing shifts
+      gross.prepend(eyeToggle());   // hangs to the left; see the negative margin
       cells[releaseIndex].appendChild(gross);
     }
 
@@ -841,7 +849,7 @@
     box.querySelector('.s4a-total-value').textContent =
       formatNumber(total) + (change == null ? '' : `  ${formatDelta(change)}`);
     const grossBox = grossNode(total, data.rows.length);
-    grossBox.appendChild(eyeToggle());
+    grossBox.prepend(eyeToggle());
     box.append(grossBox, shareNode(total), allPlatformsNode(total));
     paintAmounts(box);
     return box;

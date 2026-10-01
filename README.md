@@ -5,7 +5,7 @@ Spotify for Artists roster page, `artists.spotify.com/c/roster`. Spotify shows
 per-artist figures but no roster-wide total; this fills that gap in place.
 
 ```
-Roster Overview   <streams>  ▼ <change>   ≈ €*,*** @ €0.0022/stream  👁
+Roster Overview   <streams>  ▼ <change>   👁 ≈ €*,*** @ €0.0022/stream
                                                                        ≈ €*,*** @ 40% artist share
                                                                        ≈ €*,*** all platforms @ €0.0030/stream, 80% Spotify
                                                                                     © Keeper Audio
