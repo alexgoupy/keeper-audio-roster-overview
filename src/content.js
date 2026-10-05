@@ -722,6 +722,21 @@
       .pop() || null;
   }
 
+  // With no pill to aim at, the stack can land on top of the estimate already
+  // in that cell — both are zero-width, so they start at the same point. Push
+  // it just clear of its neighbour instead.
+  function clearOfNeighbour(stack) {
+    const cell = stack.parentElement;
+    if (!cell) return;
+    const neighbour = [...cell.children].find((el) =>
+      el !== stack && el.classList && el.classList.contains('s4a-total-royalty'));
+    if (!neighbour || !neighbour.children.length) return;
+
+    const right = Math.max(...[...neighbour.children].map((el) => el.getBoundingClientRect().right));
+    const gap = right - cell.getBoundingClientRect().left + 16;
+    if (gap > 0) stack.style.marginLeft = `${Math.round(gap)}px`;
+  }
+
   // Line the stack up with that pill by measuring, not by arithmetic. Working
   // out a margin from the pill's offset means reasoning about which box the
   // offset was measured from and which box the margin applies to, and a cell's
@@ -731,12 +746,14 @@
     const stack = line.querySelector('.s4a-total-stack');
     if (!stack || !stack.isConnected) return;
     const pill = trailingPill(data.sampleRow, data.cellSel, releaseIndex);
-    if (!pill) return;
+    if (!pill) { clearOfNeighbour(stack); return; }
 
-    const target = pill.getBoundingClientRect().left;
     const marker = stack.querySelector('.s4a-total-royalty-value') || stack;
     const current = marker.getBoundingClientRect().left;
-    if (!target || !current) return;
+    if (!current) return;
+
+    const target = pill.getBoundingClientRect().left;
+    if (!target) return;
 
     const margin = (parseFloat(stack.style.marginLeft) || 0) + (target - current);
     stack.style.marginLeft = `${Math.round(margin)}px`;
@@ -880,11 +897,22 @@
     const pill = trailingPill(data.sampleRow, data.cellSel, releaseIndex);
     const shareIndex = checklistColumnIndex(headers, cells.length, [data.columnIndex, releaseIndex]);
 
-    if (pill && cells[releaseIndex]) {
-      cells[releaseIndex].appendChild(stack);   // positioned after layout
-    } else if (shareIndex !== -1 && cells[shareIndex] && cells[shareIndex] !== valueCell) {
-      cells[shareIndex].classList.add('s4a-total-cell');
-      cells[shareIndex].appendChild(stack);
+    // A row can carry fewer cells than the header has columns — an artist with
+    // no release and no tasks gets a short row — so the preferred slot may not
+    // exist. Walk the preferences and take the first that does, rather than
+    // dropping the two figures entirely, which is what used to happen.
+    const slots = [];
+    if (pill) slots.push(releaseIndex);
+    slots.push(shareIndex, releaseIndex, cells.length - 1);
+
+    const slot = slots.find((index) =>
+      index != null && index >= 0 && cells[index] && cells[index] !== valueCell);
+
+    if (slot != null) {
+      cells[slot].classList.add('s4a-total-cell');
+      cells[slot].appendChild(stack);   // positioned after layout
+    } else if (valueCell) {
+      valueCell.appendChild(stack);     // nowhere else to put it
     }
 
     const labelIndex = data.columnIndex === 0 ? Math.min(1, cells.length - 1) : 0;
