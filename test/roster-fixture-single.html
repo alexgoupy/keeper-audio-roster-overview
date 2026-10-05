@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Fixture — roster with a single artist</title>
+  <link rel="stylesheet" href="../src/styles.css">
+  <style>
+    body { margin: 0; background: #fff; color: #121212; font-family: system-ui, sans-serif; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 14px 10px; text-align: left; border-bottom: 1px solid #eee; }
+    th { color: #6a6a6a; font-size: 12px; text-transform: uppercase; }
+    td:nth-child(2), th:nth-child(2) { text-align: left; }
+    a { color: inherit; text-decoration: none; font-weight: 700; }
+    .d { margin-left: 8px; font-size: 12px; color: #c02626; }
+    .m5 { border: 1px solid #ddd; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+    /* One artist only. Expected: 1,521,568 streams -> gross 3,347 / artist 1,339 /
+       all platforms 1,796 at the default rates. */
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Welcome back, here's your overview</h1>
+    <div role="tablist"><div role="tab" aria-selected="true">Artists</div><div role="tab" aria-selected="false">Releases</div></div>
+    <table>
+      <thead>
+        <tr><th>Artist (1)</th><th>Streams</th><th>Release</th><th>Release checklist</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><a href="/c/artist/artist0000000000000009/home">Solo Artist</a></td>
+          <td>1,521,568<span class="d">-26%</span></td>
+          <td>Upcoming • Dec 1, 2027 Only Track <span class="m5">2 more</span></td>
+          <td>2 tasks left</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+  <script src="../src/content.js"></script>
+</body>
+</html>

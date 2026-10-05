@@ -193,7 +193,12 @@
   }
 
   function analyzeRows(rows, cellSel, headers) {
-    if (rows.length < 2) return null;
+    // A single-artist roster is a real roster. One row is accepted, but only on
+    // the strength of a named Streams header below — the geometric and
+    // magnitude fallbacks both need several rows to mean anything, and on one
+    // row they would happily total any stray number on the page.
+    if (!rows.length) return null;
+    const single = rows.length < 2;
     const cellsPerRow = rows.map((row) => [...row.querySelectorAll(cellSel)]);
 
     const hits = new Map();
@@ -208,22 +213,28 @@
     });
     if (!hits.size) return null;
 
-    const threshold = Math.max(2, Math.floor(rows.length * 0.6));
+    const threshold = single ? 1 : Math.max(2, Math.floor(rows.length * 0.6));
     const usable = [...hits.entries()].filter(([, count]) => count >= threshold).map(([index]) => index);
     if (!usable.length) return null;
 
     let chosen = null;
     let metric = null;
     let headerText = '';
+    let namedHeader = false;
 
     for (const candidate of METRICS) {
       const index = usable.find((i) => headers[i] && candidate.test.test(headers[i]));
-      if (index != null) { chosen = index; metric = candidate; headerText = headers[index]; break; }
+      if (index != null) {
+        chosen = index; metric = candidate; headerText = headers[index]; namedHeader = true; break;
+      }
     }
 
     if (chosen == null) {
       const geometric = columnByGeometry(cellsPerRow, usable);
-      if (geometric) { chosen = geometric.index; metric = geometric.metric; headerText = geometric.headerText; }
+      if (geometric) {
+        chosen = geometric.index; metric = geometric.metric; headerText = geometric.headerText;
+        namedHeader = true;   // still matched on a header's words, just located by position
+      }
     }
 
     if (chosen == null) {
@@ -233,6 +244,11 @@
       metric = METRICS[0];
       headerText = headers[chosen] || '';
       debug('column chosen by magnitude', { index: chosen, medians: usable.map((i) => [i, median(samples.get(i))]) });
+    }
+
+    if (single && !namedHeader) {
+      debug('single row with no named Streams header; not totalling');
+      return null;
     }
 
     const parsed = [];

@@ -44,7 +44,7 @@ page.
 | 👁 | Reveals the amounts, hidden by default |
 
 It recalculates on its own when you switch period (24 hours / 7 days / 28 days /
-12 months), sort or filter. It appears on the **Artists** tab only — the Releases tab
+12 months), sort or filter, and works on a roster of any size, including one artist. It appears on the **Artists** tab only — the Releases tab
 lists releases, not per-artist streams.
 
 ## Settings
