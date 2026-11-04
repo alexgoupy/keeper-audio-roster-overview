@@ -984,7 +984,102 @@
     return box;
   }
 
-  const CREDIT = '\u00a9 Keeper Audio';
+  const CREDIT = '© Keeper Audio';
+
+  /* --------------------------------------------------------- dashboard export */
+
+  // The dashboard Mac app (Keeper Dashboard, or Producer Dashboard) shows the roster's 28-day and 12-month streams.
+  // Each time the roster is read for one of those two periods, its figures are
+  // kept in this site's storage; the export button under the line writes both
+  // into one file in Downloads, which the app picks up on its own.
+  const KD_KEYS = { '28d': 's4aKD28d', '12m': 's4aKD12m' };
+  const KD_FILE = 'dashboard-streams.json';
+
+  function periodKey(period) {
+    if (!period) return null;
+    if (/^\s*28\s*(days?|jours?|d[ií]as|tage|giorni)\s*$/i.test(period)) return '28d';
+    if (/^\s*12\s*(months?|mois|meses|monate|mesi)\s*$/i.test(period)) return '12m';
+    return null;
+  }
+
+  function remember(data, total, change, period) {
+    const key = periodKey(period);
+    if (!key || data.metric.key !== 'streams') return;
+    const artists = {};
+    for (const row of data.rows) {
+      if (!row.name) continue;
+      artists[row.name] = { streams: Math.round(row.value), ...(row.delta != null ? { change: row.delta } : {}) };
+    }
+    const snap = { at: new Date().toISOString(), total: Math.round(total), artists, ...(change != null ? { totalChange: Number(change.toFixed(1)) } : {}) };
+    try { localStorage.setItem(KD_KEYS[key], JSON.stringify(snap)); } catch (e) { debug('could not keep the figures', e); }
+  }
+
+  function recalled(key) {
+    try { return JSON.parse(localStorage.getItem(KD_KEYS[key]) || 'null'); } catch { return null; }
+  }
+  // figures older than a day are left out of an export rather than passed off as current
+  const fresh = (snap) => snap && Date.now() - Date.parse(snap.at) < 864e5;
+
+  function exportFile() {
+    const month = recalled('28d');
+    const year = recalled('12m');
+    if (!fresh(month)) return null;
+    const fraction = (v) => (v > 1 ? v / 100 : v);
+    const doc = {
+      updatedAt: new Date().toISOString(),
+      period: '28 days',
+      source: 'Spotify for Artists roster (Roster Overview export)',
+      total: month.total,
+      ...(month.totalChange != null ? { totalChange: month.totalChange } : {}),
+      artists: month.artists,
+      ...(fresh(year) ? { year: { period: '12 months', total: year.total, ...(year.totalChange != null ? { totalChange: year.totalChange } : {}), artists: year.artists } } : {}),
+      rates: { rate: royaltyRate(), artistShare: fraction(artistShare()), spotifyShare: fraction(spotifyShare()), otherRate: otherRate() },
+    };
+    return JSON.stringify(doc, null, 2);
+  }
+
+  function creditText() {
+    const span = document.createElement('span');
+    span.className = 's4a-credit-text';
+    span.textContent = CREDIT;
+    return span;
+  }
+
+  function exportButton() {
+    const has28 = fresh(recalled('28d'));
+    const has12 = fresh(recalled('12m'));
+    const wrap = document.createElement('span');
+    wrap.className = 's4a-kd';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 's4a-kd-export';
+    button.textContent = 'Export to Dashboard';
+    button.disabled = !has28;
+    button.title = has28
+      ? `Saves ${KD_FILE} in Downloads; the dashboard app imports it by itself.` +
+        (has12 ? '' : ' Show the 12 months period once first to include the yearly figures.')
+      : 'Show the 28 days period first: the export needs its figures.';
+    const status = document.createElement('span');
+    status.className = 's4a-kd-status';
+    status.textContent = `28 days ${has28 ? '✓' : '—'} · 12 months ${has12 ? '✓' : '—'}`;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const json = exportFile();
+      if (!json) return;
+      const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = KD_FILE;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      status.textContent = 'Exported ✓';
+    });
+    wrap.append(button, status);
+    return wrap;
+  }
 
   // A second, flagged element under the total. Flagged so that parsing skips it
   // and so that a re-render clears it along with the row it belongs to.
@@ -996,14 +1091,14 @@
       const cell = document.createElement('td');
       cell.colSpan = Math.max(1, line.querySelectorAll(cellSel).length);
       cell.className = 's4a-total-credit';
-      cell.textContent = CREDIT;
+      cell.append(exportButton(), creditText());
       row.appendChild(cell);
       return row;
     }
     const box = document.createElement('div');
     box.setAttribute(FLAG, 'credit');
     box.className = 's4a-total-credit';
-    box.textContent = CREDIT;
+    box.append(exportButton(), creditText());
     return box;
   }
 
@@ -1051,6 +1146,7 @@
     const total = data.rows.reduce((sum, row) => sum + row.value, 0);
     const change = aggregateChange(data.rows);
     const period = activePeriod();
+    remember(data, total, change, period);
     const signature = `${total}|${change}|${data.rows.length}|${period}|${data.columnIndex}`;
     if (!force && signature === lastSignature && existing.length &&
         existing.every((node) => node.isConnected)) return;

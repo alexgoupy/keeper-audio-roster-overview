@@ -134,3 +134,15 @@
 .s4a-total-eye svg { display: block; }
 .s4a-total-eye:hover { opacity: .6; }
 .s4a-total-eye:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
+
+/* The dashboard export, on the left of the credit line; the credit keeps its quiet opacity. */
+.s4a-kd { float: left; display: inline-flex; align-items: center; gap: 8px; }
+.s4a-total-credit:has(.s4a-kd) { opacity: 1; }
+.s4a-credit-text { opacity: .45; }
+.s4a-kd-export {
+  font: inherit; font-weight: 600; color: inherit; cursor: pointer;
+  background: transparent; border: 1px solid currentColor; border-radius: 999px; padding: 2px 9px; opacity: .7;
+}
+.s4a-kd-export:hover:not(:disabled) { opacity: 1; }
+.s4a-kd-export:disabled { cursor: default; opacity: .35; }
+.s4a-kd-status { opacity: .55; }
